@@ -1,0 +1,11 @@
+name = "truthguard-yuanbao"
+compatibility_date = "2024-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+[site]
+bucket = "./dist"
+
+[vars]
+# 默认环境变量（亦可在 Cloudflare Dashboard 设置 Secrets 或在前端 Web 设置面板中配置）
+DEFAULT_AI_BASE_URL = "https://token.sensenova.cn/v1/chat/completions"
+DEFAULT_AI_MODEL = "sensenova-6.8-flash-lite"

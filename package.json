@@ -1,0 +1,35 @@
+{
+  "name": "truthguard-yuanbao-copilot",
+  "private": true,
+  "version": "1.0.0",
+  "description": "TruthGuard 事实检察官 - 基于腾讯云元宝搜索的学术与技术文章实时事实审校官 (Cloudflare Ready)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test:search": "node test-search.js",
+    "deploy": "wrangler pages deploy dist"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.475.0",
+    "mammoth": "^1.13.0",
+    "pdfjs-dist": "^6.4.299",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwind-merge": "^3.0.1"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250214.0",
+    "@types/react": "^19.0.8",
+    "@types/react-dom": "^19.0.3",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.5.2",
+    "tailwindcss": "^3.4.17",
+    "typescript": "~5.7.2",
+    "vite": "^6.1.0",
+    "wrangler": "^3.109.2"
+  }
+}
