@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Sparkles, Zap, Globe, CheckCircle2, 
-  FileText, Cpu, Scale 
+  FileText, Cpu, Scale, Puzzle, Github 
 } from 'lucide-react';
 import { Header } from './components/Header';
 import { Editor } from './components/Editor';
@@ -11,6 +11,7 @@ import { VerificationPanel } from './components/VerificationPanel';
 import { SettingsModal } from './components/SettingsModal';
 import { CertificateModal } from './components/CertificateModal';
 import { BenchmarkPanel } from './components/BenchmarkPanel';
+import { ExtensionModal } from './components/ExtensionModal';
 import { 
   Claim, DEFAULT_SETTINGS, UserSettings, VerificationSummary, WorkflowState,
   SourceInputType, ExtractedMediaItem, SourceInspectionTask, MultimodalExtractionTask
@@ -58,6 +59,7 @@ export const App: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [isCertificateOpen, setIsCertificateOpen] = useState<boolean>(false);
   const [isBenchmarkOpen, setIsBenchmarkOpen] = useState<boolean>(false);
+  const [isExtensionOpen, setIsExtensionOpen] = useState<boolean>(false);
 
   // User Settings with LocalStorage persistence
   const [settings, setSettings] = useState<UserSettings>(() => {
@@ -339,6 +341,7 @@ export const App: React.FC = () => {
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenCertificate={() => setIsCertificateOpen(true)}
         onOpenBenchmark={() => setIsBenchmarkOpen(true)}
+        onOpenExtension={() => setIsExtensionOpen(true)}
         onLogoClick={() => setIsStudioMode(false)}
         hasResults={claims.length > 0 && summary !== null}
         claimsCount={claims.length}
@@ -364,9 +367,19 @@ export const App: React.FC = () => {
           }`}
         >
           {/* Top Pill Announcement */}
-          <div className="inline-flex items-center gap-2 rounded-full border border-yuanbao-300/80 bg-white/90 px-3.5 py-1 text-xs font-medium text-yuanbao-800 shadow-2xs mb-4">
-            <Sparkles className="h-3.5 w-3.5 text-yuanbao-600 animate-spin" />
-            <span>腾讯元宝搜索 · 权威多源事实穿透审校引擎</span>
+          <div className="flex items-center gap-2 flex-wrap justify-center mb-4">
+            <div className="inline-flex items-center gap-2 rounded-full border border-yuanbao-300/80 bg-white/90 px-3.5 py-1 text-xs font-medium text-yuanbao-800 shadow-2xs">
+              <Sparkles className="h-3.5 w-3.5 text-yuanbao-600 animate-spin" />
+              <span>腾讯元宝搜索 · 权威多源事实穿透审校引擎</span>
+            </div>
+
+            <button
+              onClick={() => setIsExtensionOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50/90 hover:bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800 shadow-2xs transition active:scale-[0.98] cursor-pointer"
+            >
+              <Puzzle className="h-3.5 w-3.5 text-emerald-600" />
+              <span>🧩 浏览器划词核验插件已上线 · 点击体验</span>
+            </button>
           </div>
 
           {/* Major Title */}
@@ -679,7 +692,17 @@ export const App: React.FC = () => {
             </div>
 
             {/* Right: Technical Badges & Quick Action */}
-            <div className="flex items-center gap-3 text-[11.5px] text-slate-400">
+            <div className="flex items-center gap-3 text-[11.5px] text-slate-400 flex-wrap">
+              <a
+                href="https://github.com/FreshmanJ/TruthGuard"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 hover:text-slate-800 transition text-slate-500 font-medium cursor-pointer"
+              >
+                <Github className="h-3.5 w-3.5 text-slate-600" />
+                <span>GitHub 开源</span>
+              </a>
+              <span>•</span>
               <button 
                 onClick={() => setIsSettingsOpen(true)}
                 className="hover:text-slate-800 transition cursor-pointer"
@@ -717,6 +740,11 @@ export const App: React.FC = () => {
         isOpen={isBenchmarkOpen}
         onClose={() => setIsBenchmarkOpen(false)}
         summary={summary}
+      />
+
+      <ExtensionModal
+        isOpen={isExtensionOpen}
+        onClose={() => setIsExtensionOpen(false)}
       />
     </div>
   );

@@ -9,6 +9,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test:search": "node test-search.js",
+    "package:ext": "node scripts/package-extension.js",
     "deploy": "wrangler pages deploy dist"
   },
   "dependencies": {

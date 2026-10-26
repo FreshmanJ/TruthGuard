@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TruthGuard 事实检察官</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo-box">
+        <img src="icons/icon48.png" alt="Logo" class="logo-img">
+        <div>
+          <h1 class="brand-title">TruthGuard <span>事实检察官</span></h1>
+          <p class="brand-subtitle">腾讯元宝搜索 · 权威信源实时联网</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a href="https://github.com/FreshmanJ/TruthGuard" target="_blank" rel="noopener noreferrer" class="btn-github" title="在 GitHub 上查看源码与 Star">
+          <svg class="github-icon" viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          <span>GitHub</span>
+        </a>
+        <span class="status-badge">
+          <span class="pulse-dot"></span> 就绪
+        </span>
+      </div>
+    </header>
+
+    <!-- Quick Usage Guide Banner -->
+    <div class="guide-banner">
+      <div class="guide-title">💡 网页实时核验使用指南</div>
+      <ul class="guide-steps">
+        <li><strong>选中文本</strong>：在任意网页划选需要核验的内容（>5字）</li>
+        <li><strong>触发核验</strong>：点击浮现的 <span class="tag">🛡️ 事实核验</span> 或鼠标右键菜单</li>
+        <li><strong>全屏工作树</strong>：点击右下角浮窗的 <strong>小箭头</strong> 展开全屏工作拓扑图</li>
+        <li><strong>导出报告</strong>：完成后点击报告按钮，一键导出 <strong>PDF 报告</strong></li>
+      </ul>
+    </div>
+
+    <!-- Quick Test Input Section -->
+    <section class="quick-test-section">
+      <label for="test-text" class="section-label">当前标签页快速核验</label>
+      <textarea id="test-text" rows="3" placeholder="输入任意需要核验的事实陈述（例如：Python 3.14 官方已于2024年1月正式发布并彻底废除了GIL...）"></textarea>
+      <button id="btn-quick-verify" class="btn-primary">
+        <span>🚀 发送至当前网页开始事实穿透</span>
+      </button>
+    </section>
+
+    <!-- Settings Toggle -->
+    <div class="settings-toggle-row">
+      <button id="btn-toggle-settings" class="btn-text">
+        <span>⚙️ API 凭证与连接配置</span>
+        <span id="settings-arrow">▾</span>
+      </button>
+    </div>
+
+    <!-- Collapsible Settings Panel -->
+    <div id="settings-panel" class="settings-panel hidden">
+      <div class="field-group">
+        <label for="input-yuanbao-key">腾讯云元宝搜索 API Key</label>
+        <input type="password" id="input-yuanbao-key" placeholder="sk-..." autocomplete="off">
+        <span class="field-hint">用于调用腾讯云 WSA 毫秒级千亿检索底盘</span>
+      </div>
+
+      <div class="field-group">
+        <label for="input-ai-key">大模型推理 API Key (SenseNova / OpenAI)</label>
+        <input type="password" id="input-ai-key" placeholder="sk-..." autocomplete="off">
+      </div>
+
+      <div class="field-group">
+        <label for="input-ai-url">AI API Base URL</label>
+        <input type="text" id="input-ai-url" placeholder="https://token.sensenova.cn/v1/chat/completions">
+      </div>
+
+      <div class="field-group">
+        <label for="input-ai-model">AI 模型名称</label>
+        <input type="text" id="input-ai-model" placeholder="sensenova-6.8-flash-lite">
+      </div>
+
+      <div class="field-group">
+        <label for="input-proxy-url">TruthGuard 本地/云端后端服务地址</label>
+        <input type="text" id="input-proxy-url" placeholder="http://localhost:3000">
+        <span class="field-hint">本地启动 TruthGuard 时可自动优先代理转发</span>
+      </div>
+
+      <div class="field-actions">
+        <button id="btn-save-settings" class="btn-secondary">保存配置</button>
+        <span id="save-status" class="save-status hidden">已保存 ✓</span>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <a href="https://github.com/FreshmanJ/TruthGuard" target="_blank" rel="noopener noreferrer" class="footer-github-link">
+        <svg class="github-icon" viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+          <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+        </svg>
+        <span>GitHub 开源</span>
+      </a>
+      <span>•</span>
+      <span>v1.0.0</span>
+      <span>•</span>
+      <span>Powered by Tencent WSA</span>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

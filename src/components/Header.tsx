@@ -1,13 +1,14 @@
 import React from 'react';
 import { 
   ShieldCheck, Settings, Award, BarChart3, 
-  Play, Pause, Square, Clock, Sparkles
+  Play, Pause, Square, Clock, Sparkles, Puzzle, Github
 } from 'lucide-react';
 
 interface HeaderProps {
   onOpenSettings: () => void;
   onOpenCertificate: () => void;
   onOpenBenchmark: () => void;
+  onOpenExtension: () => void;
   onLogoClick?: () => void;
   hasResults: boolean;
   claimsCount: number;
@@ -26,6 +27,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenSettings,
   onOpenCertificate,
   onOpenBenchmark,
+  onOpenExtension,
   onLogoClick,
   hasResults,
   claimsCount,
@@ -156,6 +158,31 @@ export const Header: React.FC<HeaderProps> = ({
               <span>审计背书证书</span>
             </button>
           )} */}
+
+          {/* Browser Extension Button */}
+          <button
+            onClick={onOpenExtension}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300/90 bg-gradient-to-r from-emerald-50 via-teal-50/70 to-emerald-50 px-2.5 py-1.5 text-xs font-bold text-emerald-900 shadow-2xs transition hover:from-emerald-100 hover:to-teal-100 active:scale-[0.98] cursor-pointer"
+            title="下载并安装 TruthGuard 浏览器划词事实核验插件"
+          >
+            <Puzzle className="h-3.5 w-3.5 text-emerald-600" />
+            <span>浏览器插件</span>
+            <span className="hidden sm:inline-flex items-center rounded-full bg-emerald-200/80 px-1.5 py-0.2 text-[9.5px] font-mono text-emerald-950 font-extrabold">
+              v1.0
+            </span>
+          </button>
+
+          {/* GitHub Open Source Link */}
+          <a
+            href="https://github.com/FreshmanJ/TruthGuard"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/80 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 active:scale-[0.98]"
+            title="在 GitHub 上查看开源源码与 Star"
+          >
+            <Github className="h-3.5 w-3.5 text-slate-800" />
+            <span className="hidden sm:inline">GitHub</span>
+          </a>
 
           {/* Settings Button */}
           <button
