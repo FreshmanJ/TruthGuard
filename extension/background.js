@@ -1,14 +1,50 @@
 // TruthGuard Browser Extension Background Service Worker (Manifest V3)
 
 const DEFAULT_SETTINGS = {
+  useCustomYuanbaoKey: false,
   yuanbaoApiKey: '',
+  useCustomAiKey: false,
   aiApiKey: '',
   aiBaseUrl: 'https://token.sensenova.cn/v1/chat/completions',
   aiModel: 'sensenova-6.8-flash-lite',
-  proxyUrl: 'http://localhost:3000',
-  useProxy: true,
+  proxyUrl: 'https://truthguard-yuanbao.pages.dev',
   searchCount: 10
 };
+
+const DEFAULT_PROD_URL = 'https://truthguard-yuanbao.pages.dev';
+
+// Persistent client/browser ID for IP + browser fingerprint rate-limiting
+async function getBrowserId() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['truthguard_browser_id'], (res) => {
+      if (res.truthguard_browser_id) {
+        resolve(res.truthguard_browser_id);
+      } else {
+        const newId = 'b_ext_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+        chrome.storage.local.set({ truthguard_browser_id: newId }, () => resolve(newId));
+      }
+    });
+  });
+}
+
+// Fetch helper with local -> cloud fallback (if localhost:3000 is down, auto-failover to Cloudflare Pages)
+async function fetchWithProxyFallback(apiPath, fetchOptions, preferredBaseUrl) {
+  let primary = (preferredBaseUrl || DEFAULT_SETTINGS.proxyUrl).replace(/\/+$/, '');
+  try {
+    const res = await fetch(`${primary}${apiPath}`, fetchOptions);
+    return res;
+  } catch (err) {
+    if (primary.includes('localhost') && DEFAULT_PROD_URL && primary !== DEFAULT_PROD_URL) {
+      console.warn(`[TruthGuard Background] Localhost proxy unreachable (${err.message}), auto-routing to Cloudflare Pages: ${DEFAULT_PROD_URL}${apiPath}`);
+      try {
+        return await fetch(`${DEFAULT_PROD_URL}${apiPath}`, fetchOptions);
+      } catch (cloudErr) {
+        throw err;
+      }
+    }
+    throw err;
+  }
+}
 
 // 1. Setup Context Menu & Default Settings on install
 function setupContextMenu() {
@@ -39,12 +75,11 @@ chrome.runtime.onInstalled.addListener(() => {
   console.log('[TruthGuard Extension] Installed & Initialized');
 });
 
-// Also ensure context menu exists on startup
 chrome.runtime.onStartup.addListener(() => {
   setupContextMenu();
 });
 
-// 2. Handle Context Menu Click with Automatic Content Script Injection Fallback
+// 2. Handle Context Menu Click
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === 'truthguard_verify_selection' && tab?.id) {
     const text = (info.selectionText || '').trim();
@@ -55,7 +90,6 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
         text: text
       }, (response) => {
         if (chrome.runtime.lastError) {
-          console.warn('[TruthGuard Background] Content script not ready on tab, executing auto-injection:', chrome.runtime.lastError.message);
           if (retryCount === 0 && chrome.scripting) {
             chrome.scripting.executeScript({
               target: { tabId: tab.id },
@@ -66,8 +100,6 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
               console.error('[TruthGuard Background] Script injection failed:', err);
             });
           }
-        } else {
-          console.log('[TruthGuard Background] Verification triggered on tab:', response);
         }
       });
     };
@@ -76,13 +108,14 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   }
 });
 
-// 3. Message Routing for Content Scripts & Popup
+// 3. Message Routing
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === 'TRUTHGUARD_GET_SETTINGS') {
     chrome.storage.local.get(['truthguard_settings'], (res) => {
-      sendResponse(res.truthguard_settings || DEFAULT_SETTINGS);
+      const settings = Object.assign({}, DEFAULT_SETTINGS, res.truthguard_settings || {});
+      sendResponse(settings);
     });
-    return true; // Keep message channel open for async response
+    return true;
   }
 
   if (request.type === 'TRUTHGUARD_SAVE_SETTINGS') {
@@ -92,17 +125,30 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 
-  if (request.type === 'TRUTHGUARD_SEARCH_REQUEST') {
-    handleSearchRequest(request.payload)
-      .then(res => sendResponse({ success: true, data: res }))
+  if (request.type === 'TRUTHGUARD_GET_QUOTA') {
+    handleGetQuota(request.payload)
+      .then(data => sendResponse({ success: true, data }))
       .catch(err => sendResponse({ success: false, error: err.message }));
     return true;
   }
 
-  if (request.type === 'TRUTHGUARD_AI_REQUEST') {
-    handleAIRequest(request.payload)
+  if (request.type === 'TRUTHGUARD_SEARCH_REQUEST') {
+    handleSearchRequest(request.payload || {})
       .then(res => sendResponse({ success: true, data: res }))
-      .catch(err => sendResponse({ success: false, error: err.message }));
+      .catch(err => {
+        console.error('[TruthGuard Background] Search error:', err);
+        sendResponse({ success: false, error: err.message });
+      });
+    return true;
+  }
+
+  if (request.type === 'TRUTHGUARD_AI_REQUEST') {
+    handleAIRequest(request.payload || {})
+      .then(res => sendResponse({ success: true, data: res }))
+      .catch(err => {
+        console.error('[TruthGuard Background] AI error:', err);
+        sendResponse({ success: false, error: err.message });
+      });
     return true;
   }
 
@@ -121,127 +167,203 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-// Helper: Yuanbao Search Request
-async function handleSearchRequest({ query, cnt = 10, apiKey, proxyUrl, useProxy }) {
-  const targetCnt = [10, 20, 30, 40, 50].includes(cnt) ? cnt : 10;
-  const cleanApiKey = (apiKey || '').replace(/^Bearer\s+/i, '').trim();
+// Helper: Fetch Quota
+async function handleGetQuota({ proxyUrl } = {}) {
+  const browserId = await getBrowserId();
+  try {
+    const res = await fetchWithProxyFallback('/api/quota', {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'X-Client-Id': browserId,
+        'X-Browser-Id': browserId
+      }
+    }, proxyUrl);
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    console.warn('[TruthGuard Background] Fetch quota failed:', err);
+  }
+  return {
+    date: new Date().toISOString().slice(0, 10),
+    search: { used: 0, limit: 120, remaining: 120 },
+    ai: { used: 0, limit: 300, remaining: 300 }
+  };
+}
 
-  // Try local proxy first if enabled
-  if (useProxy && proxyUrl) {
+// Helper: Yuanbao Search Request
+async function handleSearchRequest({ query, cnt = 10, apiKey, proxyUrl, useCustomYuanbaoKey }) {
+  const browserId = await getBrowserId();
+  const rawCnt = Number(cnt || 10);
+  const targetCnt = [10, 20, 30, 40, 50].includes(rawCnt) ? rawCnt : 10;
+
+  // 1. Custom Key Mode -> Bypass daily public limit
+  if (useCustomYuanbaoKey && apiKey && apiKey.trim()) {
+    const cleanApiKey = apiKey.trim().replace(/^Bearer\s+/i, '');
+
+    // Attempt proxy first
     try {
-      const proxyRes = await fetch(`${proxyUrl.replace(/\/+$/, '')}/api/search`, {
+      const proxyRes = await fetchWithProxyFallback('/api/search', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${cleanApiKey}`
+          'Authorization': `Bearer ${cleanApiKey}`,
+          'X-Browser-Id': browserId
         },
-        body: JSON.stringify({ Query: query, Cnt: targetCnt })
-      });
-
+        body: JSON.stringify({ Query: query, Cnt: targetCnt, apiKey: cleanApiKey })
+      }, proxyUrl);
       if (proxyRes.ok) {
         const data = await proxyRes.json();
         return parseYuanbaoPages(data);
       }
     } catch (e) {
-      console.warn('[TruthGuard Background] Proxy search failed, falling back to direct:', e.message);
+      console.warn('[TruthGuard Background] Proxy custom search failed, using direct cloud API:', e.message);
     }
+
+    // Direct Cloud API fallback
+    const directRes = await fetch('https://api.wsa.cloud.tencent.com/SearchPro', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${cleanApiKey}`
+      },
+      body: JSON.stringify({ Query: query, Cnt: targetCnt })
+    });
+
+    if (!directRes.ok) {
+      const errText = await directRes.text();
+      throw new Error(`元宝搜索调用失败 (${directRes.status}): ${errText.slice(0, 100)}`);
+    }
+
+    const directData = await directRes.json();
+    if (directData?.Response?.Error) {
+      throw new Error(`元宝搜索服务报错: ${directData.Response.Error.Message || directData.Response.Error.Code}`);
+    }
+
+    return parseYuanbaoPages(directData);
   }
 
-  // Direct WSA API call
-  const directRes = await fetch('https://api.wsa.cloud.tencent.com/SearchPro', {
+  // 2. Default Public Service -> Enforce 120 daily limit via Backend Proxy
+  const proxyRes = await fetchWithProxyFallback('/api/search', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${cleanApiKey}`
+      'X-Client-Id': browserId,
+      'X-Browser-Id': browserId
     },
-    body: JSON.stringify({ Query: query, Cnt: targetCnt })
-  });
+    body: JSON.stringify({ Query: query, Cnt: targetCnt, clientId: browserId })
+  }, proxyUrl);
 
-  if (!directRes.ok) {
-    const errText = await directRes.text();
-    throw new Error(`元宝搜索调用失败 (${directRes.status}): ${errText.slice(0, 100)}`);
+  const resText = await proxyRes.text();
+  let resJson = {};
+  try { resJson = JSON.parse(resText); } catch {}
+
+  if (!proxyRes.ok) {
+    if (proxyRes.status === 429) {
+      throw new Error(resJson.error || '今日元宝搜索免费额度已达上限 (120次/日)。请在插件设置中配置自定义 API Key。');
+    }
+    throw new Error(resJson.error || resJson.Response?.Error?.Message || `元宝搜索调用失败 (${proxyRes.status})`);
   }
 
-  const directData = await directRes.json();
-  if (directData?.Response?.Error) {
-    throw new Error(`元宝搜索服务报错: ${directData.Response.Error.Message || directData.Response.Error.Code}`);
-  }
-
-  return parseYuanbaoPages(directData);
+  return parseYuanbaoPages(resJson);
 }
 
 function parseYuanbaoPages(data) {
   const pagesRaw = data?.Response?.Pages || [];
-  return pagesRaw.map(p => {
-    let site = (p.Site || '').trim();
-    if (!site && p.Url) {
-      try { site = new URL(p.Url).hostname; } catch {}
+  const results = [];
+
+  for (const pageItem of pagesRaw) {
+    try {
+      const p = typeof pageItem === 'string' ? JSON.parse(pageItem) : pageItem;
+      if (!p) continue;
+
+      let site = (p.site || p.Site || '').trim();
+      const url = (p.url || p.Url || '').trim();
+      if (!site && url) {
+        try {
+          site = new URL(url).hostname;
+        } catch {}
+      }
+
+      results.push({
+        title: (p.title || p.Title || '权威信息来源').trim(),
+        url: url,
+        site: site || '权威信源',
+        favicon: p.favicon || p.Icon || undefined,
+        date: p.date || p.PublishTime || '',
+        score: typeof p.score === 'number' ? p.score : (typeof p.Score === 'number' ? p.Score : 0.5),
+        passage: (p.passage || p.Passage || p.content || p.Content || '').trim()
+      });
+    } catch (e) {
+      console.warn('[TruthGuard Background] Failed to parse page item:', e);
     }
-    return {
-      title: p.Title || '权威参考',
-      url: p.Url || '',
-      site: site || '网络参考',
-      favicon: p.Icon || undefined,
-      date: p.PublishTime || '',
-      score: p.Score,
-      passage: p.Passage || p.Content || ''
-    };
-  });
+  }
+
+  return results;
 }
 
 // Helper: AI Request
-async function handleAIRequest({ messages, apiKey, baseUrl, model, proxyUrl, useProxy }) {
-  const cleanApiKey = (apiKey || '').replace(/^Bearer\s+/i, '').trim();
+async function handleAIRequest({ messages, apiKey, baseUrl: aiBaseUrl, model, proxyUrl, useCustomAiKey }) {
+  const browserId = await getBrowserId();
 
-  if (useProxy && proxyUrl) {
-    try {
-      const proxyRes = await fetch(`${proxyUrl.replace(/\/+$/, '')}/api/ai`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${cleanApiKey}`
-        },
-        body: JSON.stringify({
-          messages,
-          model: model || 'sensenova-6.8-flash-lite',
-          stream: false,
-          temperature: 0.1
-        })
-      });
-
-      if (proxyRes.ok) {
-        const data = await proxyRes.json();
-        return data?.choices?.[0]?.message?.content || '';
-      }
-    } catch (e) {
-      console.warn('[TruthGuard Background] Proxy AI failed, falling back to direct:', e.message);
+  // 1. Custom Key Mode -> Bypass daily public limit
+  if (useCustomAiKey && apiKey && apiKey.trim()) {
+    const cleanApiKey = apiKey.trim().replace(/^Bearer\s+/i, '');
+    let targetUrl = (aiBaseUrl || 'https://token.sensenova.cn/v1/chat/completions').trim();
+    if (!targetUrl.endsWith('/chat/completions') && !targetUrl.includes('/chat/completions')) {
+      targetUrl = targetUrl.replace(/\/+$/, '') + '/chat/completions';
     }
+
+    const directRes = await fetch(targetUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${cleanApiKey}`
+      },
+      body: JSON.stringify({
+        model: model || 'sensenova-6.8-flash-lite',
+        messages,
+        temperature: 0.1,
+        stream: false
+      })
+    });
+
+    if (!directRes.ok) {
+      const errText = await directRes.text();
+      throw new Error(`AI 服务响应异常 (${directRes.status}): ${errText.slice(0, 100)}`);
+    }
+
+    const directData = await directRes.json();
+    return directData?.choices?.[0]?.message?.content || '';
   }
 
-  let targetUrl = (baseUrl || 'https://token.sensenova.cn/v1/chat/completions').trim();
-  if (!targetUrl.endsWith('/chat/completions') && !targetUrl.includes('/chat/completions')) {
-    targetUrl = targetUrl.replace(/\/+$/, '') + '/chat/completions';
-  }
-
-  const directRes = await fetch(targetUrl, {
+  // 2. Default Public Service -> Enforce 300 daily limit via Backend Proxy
+  const proxyRes = await fetchWithProxyFallback('/api/ai', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${cleanApiKey}`
+      'X-Client-Id': browserId,
+      'X-Browser-Id': browserId
     },
     body: JSON.stringify({
-      model: model || 'sensenova-6.8-flash-lite',
       messages,
+      stream: false,
       temperature: 0.1,
-      stream: false
+      clientId: browserId
     })
-  });
+  }, proxyUrl);
 
-  if (!directRes.ok) {
-    const errText = await directRes.text();
-    throw new Error(`AI 服务响应异常 (${directRes.status}): ${errText.slice(0, 100)}`);
+  const resText = await proxyRes.text();
+  let resJson = {};
+  try { resJson = JSON.parse(resText); } catch {}
+
+  if (!proxyRes.ok) {
+    if (proxyRes.status === 429) {
+      throw new Error(resJson.error || '今日 AI 接口免费额度已达上限 (300次/日)。请在插件设置中配置自定义 API Key。');
+    }
+    throw new Error(resJson.error || `AI 服务调用失败 (${proxyRes.status})`);
   }
 
-  const directData = await directRes.json();
-  return directData?.choices?.[0]?.message?.content || '';
+  return resJson?.choices?.[0]?.message?.content || '';
 }

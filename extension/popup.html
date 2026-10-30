@@ -13,78 +13,185 @@
       <div class="logo-box">
         <img src="icons/icon48.png" alt="Logo" class="logo-img">
         <div>
-          <h1 class="brand-title">TruthGuard <span>事实检察官</span></h1>
-          <p class="brand-subtitle">腾讯元宝搜索 · 权威信源实时联网</p>
+          <h1 class="brand-title">TruthGuard <span id="brand-sub">事实检察官</span></h1>
+          <p class="brand-subtitle" id="brand-tagline">腾讯元宝搜索 · 权威信源实时联网</p>
         </div>
       </div>
       <div class="header-actions">
-        <a href="https://github.com/FreshmanJ/TruthGuard" target="_blank" rel="noopener noreferrer" class="btn-github" title="在 GitHub 上查看源码与 Star">
-          <svg class="github-icon" viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
-            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
-          </svg>
-          <span>GitHub</span>
-        </a>
         <span class="status-badge">
-          <span class="pulse-dot"></span> 就绪
+          <span class="pulse-dot"></span> <span id="ready-badge">就绪</span>
         </span>
       </div>
     </header>
 
+    <!-- Quota Status Banner -->
+    <div class="quota-card">
+      <div class="quota-header">
+        <div class="quota-title">
+          <span class="quota-badge">⚡</span>
+          <span id="quota-title-text">今日公共免费额度状态</span>
+        </div>
+        <button id="btn-refresh-quota" class="btn-refresh" title="刷新最新额度">
+          <span id="quota-spin" class="spin-icon">↻</span>
+          <span id="btn-refresh-text">刷新</span>
+        </button>
+      </div>
+
+      <div class="quota-grid">
+        <div class="quota-item">
+          <div class="quota-item-header">
+            <span class="quota-name" id="quota-search-name">🔍 元宝搜索</span>
+            <span id="badge-search-custom" class="tag-custom hidden">自定义 · 无限额</span>
+            <span id="quota-search-text" class="quota-val">0 / 120 次</span>
+          </div>
+          <div id="quota-search-bar-wrap" class="progress-track">
+            <div id="quota-search-bar" class="progress-bar progress-yuanbao" style="width: 0%"></div>
+          </div>
+          <div id="quota-search-sub" class="quota-sub">单日限额 120 次</div>
+        </div>
+
+        <div class="quota-item">
+          <div class="quota-item-header">
+            <span class="quota-name" id="quota-ai-name">✨ AI 大模型</span>
+            <span id="badge-ai-custom" class="tag-custom hidden">自定义 · 无限额</span>
+            <span id="quota-ai-text" class="quota-val">0 / 300 次</span>
+          </div>
+          <div id="quota-ai-bar-wrap" class="progress-track">
+            <div id="quota-ai-bar" class="progress-bar progress-ai" style="width: 0%"></div>
+          </div>
+          <div id="quota-ai-sub" class="quota-sub">单日限额 300 次</div>
+        </div>
+      </div>
+      <div class="quota-hint" id="quota-hint-text">* IP 或浏览器指纹相同视为同一用户，每日 00:00 自动刷新重置。</div>
+    </div>
+
     <!-- Quick Usage Guide Banner -->
     <div class="guide-banner">
-      <div class="guide-title">💡 网页实时核验使用指南</div>
+      <div class="guide-title" id="guide-title-text">💡 网页实时核验使用指南</div>
       <ul class="guide-steps">
-        <li><strong>选中文本</strong>：在任意网页划选需要核验的内容（>5字）</li>
-        <li><strong>触发核验</strong>：点击浮现的 <span class="tag">🛡️ 事实核验</span> 或鼠标右键菜单</li>
-        <li><strong>全屏工作树</strong>：点击右下角浮窗的 <strong>小箭头</strong> 展开全屏工作拓扑图</li>
-        <li><strong>导出报告</strong>：完成后点击报告按钮，一键导出 <strong>PDF 报告</strong></li>
+        <li id="guide-step-1"><strong>选中文本</strong>：在任意网页划选需要核验的内容（>5字）</li>
+        <li id="guide-step-2"><strong>触发核验</strong>：点击浮现的 <span class="tag">🛡️ 事实核验</span> 或鼠标右键菜单</li>
+        <li id="guide-step-3"><strong>全屏工作树</strong>：点击右下角浮窗的 <strong>小箭头</strong> 展开全屏工作拓扑图</li>
+        <li id="guide-step-4"><strong>导出报告</strong>：完成后点击报告按钮，一键导出 <strong>PDF 报告</strong></li>
       </ul>
+    </div>
+
+    <!-- Selection Pill Preference Card -->
+    <div class="pref-card">
+      <div class="pref-info">
+        <div class="pref-title-row">
+          <span class="pref-icon">🛡️</span>
+          <span class="pref-title" id="toggle-pill-title">划选文本浮现核验胶囊</span>
+        </div>
+        <div class="pref-hint" id="toggle-pill-hint">在网页选中文本时自动弹出黑色核验胶囊（关闭后仅通过右键菜单核验）</div>
+      </div>
+      <label class="toggle-switch" title="开启/关闭选中文本浮现胶囊">
+        <input type="checkbox" id="toggle-selection-pill" checked>
+        <span class="toggle-slider"></span>
+      </label>
     </div>
 
     <!-- Quick Test Input Section -->
     <section class="quick-test-section">
-      <label for="test-text" class="section-label">当前标签页快速核验</label>
+      <label for="test-text" class="section-label" id="quick-test-label">当前标签页快速核验</label>
       <textarea id="test-text" rows="3" placeholder="输入任意需要核验的事实陈述（例如：Python 3.14 官方已于2024年1月正式发布并彻底废除了GIL...）"></textarea>
       <button id="btn-quick-verify" class="btn-primary">
-        <span>🚀 发送至当前网页开始事实穿透</span>
+        <span id="btn-quick-verify-text">🚀 发送至当前网页开始事实穿透</span>
       </button>
     </section>
 
     <!-- Settings Toggle -->
     <div class="settings-toggle-row">
       <button id="btn-toggle-settings" class="btn-text">
-        <span>⚙️ API 凭证与连接配置</span>
+        <span id="btn-toggle-settings-text">⚙️ API 凭证与连接配置</span>
         <span id="settings-arrow">▾</span>
       </button>
     </div>
 
     <!-- Collapsible Settings Panel -->
     <div id="settings-panel" class="settings-panel hidden">
-      <div class="field-group">
-        <label for="input-yuanbao-key">腾讯云元宝搜索 API Key</label>
-        <input type="password" id="input-yuanbao-key" placeholder="sk-..." autocomplete="off">
-        <span class="field-hint">用于调用腾讯云 WSA 毫秒级千亿检索底盘</span>
+
+      <!-- Language Preference Field -->
+      <div class="config-card">
+        <div class="config-header">
+          <span class="config-title" id="lang-card-title">🌐 界面语言 / Language</span>
+        </div>
+        <div class="field-group" style="margin-top: 8px;">
+          <select id="settings-select-lang" class="form-select">
+            <option value="auto">🌐 自动识别 (Auto - System & Text)</option>
+            <option value="zh">🇨🇳 简体中文 (Simplified Chinese)</option>
+            <option value="en">🇺🇸 English (US)</option>
+          </select>
+          <span class="field-hint" id="lang-card-hint">自动根据浏览器语言与页面选中文字切换中英文</span>
+        </div>
       </div>
 
-      <div class="field-group">
-        <label for="input-ai-key">大模型推理 API Key (SenseNova / OpenAI)</label>
-        <input type="password" id="input-ai-key" placeholder="sk-..." autocomplete="off">
+      <!-- Yuanbao Search Mode -->
+      <div class="config-card">
+        <div class="config-header">
+          <span class="config-title" id="yuanbao-title-text">🔍 腾讯云元宝搜索 (WSA)</span>
+          <div class="pill-group">
+            <button type="button" id="btn-yuanbao-mode-default" class="pill active">默认托管</button>
+            <button type="button" id="btn-yuanbao-mode-custom" class="pill">自定义Key</button>
+          </div>
+        </div>
+
+        <div id="yuanbao-default-hint" class="mode-info">
+          ✓ 使用系统托管官方接口，享受每日 120 次免密检索配额。
+        </div>
+
+        <div id="yuanbao-custom-fields" class="field-group hidden">
+          <label for="input-yuanbao-key" id="label-yuanbao-key">腾讯云元宝搜索 API Key</label>
+          <input type="password" id="input-yuanbao-key" placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+          <span class="field-hint" id="hint-yuanbao-key">使用您在腾讯云控制台申请的专属 API Key，不消耗每日公共配额</span>
+        </div>
+
+        <div class="test-row">
+          <button type="button" id="btn-test-search" class="btn-test">测试搜索接口</button>
+          <span id="test-search-result" class="test-result hidden"></span>
+        </div>
       </div>
 
-      <div class="field-group">
-        <label for="input-ai-url">AI API Base URL</label>
-        <input type="text" id="input-ai-url" placeholder="https://token.sensenova.cn/v1/chat/completions">
+      <!-- AI LLM Mode -->
+      <div class="config-card">
+        <div class="config-header">
+          <span class="config-title" id="ai-title-text">✨ AI 大语言模型 (LLM)</span>
+          <div class="pill-group">
+            <button type="button" id="btn-ai-mode-default" class="pill active">默认托管</button>
+            <button type="button" id="btn-ai-mode-custom" class="pill">自定义API</button>
+          </div>
+        </div>
+
+        <div id="ai-default-hint" class="mode-info">
+          ✓ 使用系统托管商汤日日新 (SenseNova 6.8) 服务，享受每日 300 次免密推理配额。
+        </div>
+
+        <div id="ai-custom-fields" class="hidden space-y-sm">
+          <div class="field-group">
+            <label for="input-ai-key" id="label-ai-key">自定义模型 API Key</label>
+            <input type="password" id="input-ai-key" placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+          </div>
+          <div class="field-group">
+            <label for="input-ai-url" id="label-ai-url">AI API Base URL</label>
+            <input type="text" id="input-ai-url" placeholder="https://token.sensenova.cn/v1/chat/completions">
+          </div>
+          <div class="field-group">
+            <label for="input-ai-model" id="label-ai-model">AI 模型名称</label>
+            <input type="text" id="input-ai-model" placeholder="sensenova-6.8-flash-lite">
+          </div>
+        </div>
+
+        <div class="test-row">
+          <button type="button" id="btn-test-ai" class="btn-test">测试 AI 接口</button>
+          <span id="test-ai-result" class="test-result hidden"></span>
+        </div>
       </div>
 
+      <!-- Proxy Server URL -->
       <div class="field-group">
-        <label for="input-ai-model">AI 模型名称</label>
-        <input type="text" id="input-ai-model" placeholder="sensenova-6.8-flash-lite">
-      </div>
-
-      <div class="field-group">
-        <label for="input-proxy-url">TruthGuard 本地/云端后端服务地址</label>
-        <input type="text" id="input-proxy-url" placeholder="http://localhost:3000">
-        <span class="field-hint">本地启动 TruthGuard 时可自动优先代理转发</span>
+        <label for="input-proxy-url" id="label-proxy-url">TruthGuard 后端服务地址</label>
+        <input type="text" id="input-proxy-url" placeholder="https://truthguard-yuanbao.pages.dev">
+        <span class="field-hint" id="hint-proxy-url">系统默认免费接口通过后端代理统一校验每日配额</span>
       </div>
 
       <div class="field-actions">
@@ -95,16 +202,27 @@
 
     <!-- Footer -->
     <footer class="footer">
-      <a href="https://github.com/FreshmanJ/TruthGuard" target="_blank" rel="noopener noreferrer" class="footer-github-link">
-        <svg class="github-icon" viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
-          <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
-        </svg>
-        <span>GitHub 开源</span>
-      </a>
-      <span>•</span>
-      <span>v1.0.0</span>
-      <span>•</span>
-      <span>Powered by Tencent WSA</span>
+      <div class="footer-top">
+        <div class="footer-lang-box">
+          <label for="select-lang" class="footer-lang-label" id="footer-lang-label">语言 / Lang:</label>
+          <select id="select-lang" class="lang-select-footer" title="Language / 语言切换">
+            <option value="auto">🌐 自动 / Auto</option>
+            <option value="zh">🇨🇳 中文</option>
+            <option value="en">🇺🇸 English</option>
+          </select>
+        </div>
+        <a href="https://github.com/FreshmanJ/TruthGuard" target="_blank" rel="noopener noreferrer" class="footer-github-link" title="GitHub Repository">
+          <svg class="github-icon" viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          <span id="footer-github-text">GitHub 开源</span>
+        </a>
+      </div>
+      <div class="footer-bottom">
+        <span>TruthGuard v1.0.0</span>
+        <span>•</span>
+        <span id="footer-powered-text">Powered by Tencent WSA</span>
+      </div>
     </footer>
   </div>
 

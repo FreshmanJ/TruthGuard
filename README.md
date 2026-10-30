@@ -9,6 +9,7 @@
 [![React 19](https://img.shields.io/badge/React-19.0-61dafb.svg)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue.svg)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-3.4-38bdf8.svg)](https://tailwindcss.com/)
+[![i18n](https://img.shields.io/badge/i18n-English%20%7C%20%E4%B8%AD%E6%96%87-blueviolet.svg)](#)
 
 ---
 
@@ -34,6 +35,7 @@
   * 右下角轻量悬浮工作态胶囊；
   * 点击小箭头即可平滑展开与网页版完全一致的**全屏交互式工作过程拓扑树**；
   * 核验完成后浮窗变为「查看报告」按钮，可一键展开完整审计报告并**直接下载为 PDF 格式**！
+* 🌐 **中英双语国际化 (i18n Ready)**：顶栏一键无缝切换中英文界面，深度本地化内置预设样例（学术论文、科技快讯、政策规范）、交互日志、全屏工作拓扑树与背书审计报告；
 * 📜 **背书证书与 Markdown 报告**：一键生成事实审计健康度证书（带元宝搜索防伪认证印鉴）。
 
 ---

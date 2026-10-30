@@ -1,6 +1,7 @@
 import React from 'react';
-import { X, Zap, Cpu, CheckCircle2, AlertOctagon, TrendingDown, Layers, Clock } from 'lucide-react';
+import { X, Zap, Cpu, CheckCircle2, AlertOctagon, TrendingDown } from 'lucide-react';
 import { VerificationSummary } from '../types';
+import { useI18n, interpolate } from '../i18n/context';
 
 interface BenchmarkPanelProps {
   isOpen: boolean;
@@ -13,6 +14,8 @@ export const BenchmarkPanel: React.FC<BenchmarkPanelProps> = ({
   onClose,
   summary,
 }) => {
+  const { t } = useI18n();
+
   if (!isOpen) return null;
 
   const totalQueries = summary?.totalClaims || 4;
@@ -29,14 +32,15 @@ export const BenchmarkPanel: React.FC<BenchmarkPanelProps> = ({
             <Zap className="h-4 w-4 text-yuanbao-600" />
             <div>
               <h3 className="text-xs font-bold text-slate-800 tracking-tight">
-                元宝搜索 vs 传统网络爬虫能效评测 (Benchmark)
+                {t.benchmark.title}
               </h3>
-              <p className="text-[11px] text-slate-400">大模型输入信息去噪率与上下文 Token 成本对比</p>
+              <p className="text-[11px] text-slate-400">{t.benchmark.subtitle}</p>
             </div>
           </div>
           <button
             onClick={onClose}
             className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-200/60 hover:text-slate-700 transition"
+            title={t.common.close}
           >
             <X className="h-4 w-4" />
           </button>
@@ -49,13 +53,13 @@ export const BenchmarkPanel: React.FC<BenchmarkPanelProps> = ({
             <div className="relative z-10 flex items-center justify-between">
               <div>
                 <span className="text-[10px] text-yuanbao-400 uppercase tracking-widest font-mono font-semibold">
-                  CONTEXT TOKEN REDUCTION
+                  {t.benchmark.contextTokenReduction}
                 </span>
                 <div className="text-3xl font-black mt-0.5 tracking-tight font-mono">
-                  Token 消耗直降 <span className="text-yuanbao-400">{savings}%</span>
+                  {interpolate(t.benchmark.tokenSavingsTitle, { savings })}
                 </div>
                 <p className="mt-1 text-[11px] text-slate-300 max-w-md">
-                  元宝搜索在云端完成千亿向量实时索引与 Gist Token 压缩去噪，无需输入冗余 HTML 网页代码。
+                  {t.benchmark.tokenSavingsDesc}
                 </p>
               </div>
 
@@ -74,24 +78,24 @@ export const BenchmarkPanel: React.FC<BenchmarkPanelProps> = ({
             <div className="rounded-2xl border border-rose-200/70 bg-rose-50/30 p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <AlertOctagon className="h-4 w-4 text-rose-600" />
-                <h4 className="font-bold text-slate-800 text-[12px]">传统网页抓取 + 粗清洗</h4>
+                <h4 className="font-bold text-slate-800 text-[12px]">{t.benchmark.cardTraditionalTitle}</h4>
               </div>
               <div className="space-y-2 text-slate-600">
                 <div className="flex justify-between border-b border-rose-100 pb-1.5">
-                  <span className="text-slate-500">单信源原始大小</span>
+                  <span className="text-slate-500">{t.benchmark.cardTraditionalSourceSize}</span>
                   <span className="font-mono font-bold text-rose-700">~60 KB - 250 KB</span>
                 </div>
                 <div className="flex justify-between border-b border-rose-100 pb-1.5">
-                  <span className="text-slate-500">单轮核验消耗 Token</span>
+                  <span className="text-slate-500">{t.benchmark.cardTraditionalTokenCost}</span>
                   <span className="font-mono font-bold text-rose-700">~{rawTokens.toLocaleString()} Tokens</span>
                 </div>
                 <div className="flex justify-between border-b border-rose-100 pb-1.5">
-                  <span className="text-slate-500">平均检索时延</span>
+                  <span className="text-slate-500">{t.benchmark.cardTraditionalLatency}</span>
                   <span className="font-mono font-bold text-rose-700">2,800ms - 5,500ms</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">维护成本</span>
-                  <span className="text-rose-700 font-medium">高（代理池、反爬对抗）</span>
+                  <span className="text-slate-500">{t.benchmark.cardTraditionalMaintenance}</span>
+                  <span className="text-rose-700 font-medium">{t.benchmark.cardTraditionalMaintenanceVal}</span>
                 </div>
               </div>
             </div>
@@ -100,24 +104,24 @@ export const BenchmarkPanel: React.FC<BenchmarkPanelProps> = ({
             <div className="rounded-2xl border border-yuanbao-200/80 bg-yuanbao-50/30 p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-yuanbao-600" />
-                <h4 className="font-bold text-slate-800 text-[12px]">腾讯云元宝搜索 (WSA)</h4>
+                <h4 className="font-bold text-slate-800 text-[12px]">{t.benchmark.cardYuanbaoTitle}</h4>
               </div>
               <div className="space-y-2 text-slate-600">
                 <div className="flex justify-between border-b border-yuanbao-100 pb-1.5">
-                  <span className="text-slate-500">精排事实摘要大小</span>
-                  <span className="font-mono font-bold text-yuanbao-700">~1.2 KB (纯事实段落)</span>
+                  <span className="text-slate-500">{t.benchmark.cardYuanbaoSourceSize}</span>
+                  <span className="font-mono font-bold text-yuanbao-700">{t.benchmark.cardYuanbaoSourceSizeVal}</span>
                 </div>
                 <div className="flex justify-between border-b border-yuanbao-100 pb-1.5">
-                  <span className="text-slate-500">单轮核验消耗 Token</span>
+                  <span className="text-slate-500">{t.benchmark.cardYuanbaoTokenCost}</span>
                   <span className="font-mono font-bold text-yuanbao-700">~{yuanbaoTokens.toLocaleString()} Tokens</span>
                 </div>
                 <div className="flex justify-between border-b border-yuanbao-100 pb-1.5">
-                  <span className="text-slate-500">平均检索时延</span>
+                  <span className="text-slate-500">{t.benchmark.cardYuanbaoLatency}</span>
                   <span className="font-mono font-bold text-yuanbao-700">300ms - 600ms</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">信源权威度</span>
-                  <span className="text-yuanbao-700 font-medium">157+ 头部权威行业信源</span>
+                  <span className="text-slate-500">{t.benchmark.cardYuanbaoAuthority}</span>
+                  <span className="text-yuanbao-700 font-medium">{t.benchmark.cardYuanbaoAuthorityVal}</span>
                 </div>
               </div>
             </div>
@@ -127,10 +131,10 @@ export const BenchmarkPanel: React.FC<BenchmarkPanelProps> = ({
           <div className="rounded-xl bg-[#FAFAFA] p-4 border border-slate-200/70">
             <h5 className="font-semibold text-slate-800 mb-1 flex items-center gap-1.5 text-[11.5px]">
               <Cpu className="h-3.5 w-3.5 text-slate-600" />
-              为什么元宝搜索能让事实核查快又省？
+              {t.benchmark.whyTitle}
             </h5>
             <p className="text-slate-600 leading-relaxed text-[11px]">
-              元宝搜索在云端完成分层聚类与去噪精排，直接向大模型输送高相关度的 `passage` 结构化摘要，省去了繁杂的爬虫、清洗与重排工程。结合高时效信源召回，构建起真正可信、低延迟的事实审校副驾驶。
+              {t.benchmark.whyDesc}
             </p>
           </div>
         </div>
@@ -141,7 +145,7 @@ export const BenchmarkPanel: React.FC<BenchmarkPanelProps> = ({
             onClick={onClose}
             className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800 transition active:scale-[0.98]"
           >
-            关闭评测面板
+            {t.benchmark.closeBtn}
           </button>
         </div>
       </div>

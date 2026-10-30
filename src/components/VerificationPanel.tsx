@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  CheckCircle2, AlertTriangle, XCircle, HelpCircle, 
-  ExternalLink, ChevronDown, ChevronUp, Copy, Check, 
-  Globe2, ShieldAlert, BookOpen, Search, ArrowUpRight,
-  Gavel, Award, BarChart3, Wand2, BookMarked, ShieldCheck,
-  CheckCircle, Sparkles, X, Layers, Filter
+  CheckCircle2, ChevronDown, ChevronUp, Copy, Check, 
+  Globe2, ShieldAlert, Search, ArrowUpRight,
+  Gavel, Award, BarChart3, BookMarked, ShieldCheck,
+  Sparkles, X, Layers, Filter
 } from 'lucide-react';
 import { Claim, ClaimStatus, VerificationSummary, WorkflowState } from '../types';
+import { useI18n } from '../i18n/context';
 
 interface VerificationPanelProps {
   claims: Claim[];
@@ -23,14 +23,12 @@ interface VerificationPanelProps {
 export const VerificationPanel: React.FC<VerificationPanelProps> = ({
   claims,
   summary,
-  onApplySingleCorrection,
-  isLoading,
   workflowState,
   onOpenCertificate,
   onOpenBenchmark,
   onInjectCitations,
-  onApplyAllCorrections,
 }) => {
+  const { lang, t, interpolate } = useI18n();
   const [filter, setFilter] = useState<'all' | ClaimStatus>('all');
   const [expandedClaimId, setExpandedClaimId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -69,19 +67,17 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
   };
 
   const getCategoryName = (cat: string) => {
-    const map: Record<string, string> = {
-      numeric: '数据统计',
-      version: '版本特性',
-      temporal: '时间时效',
-      policy: '政策法规',
-      scientific: '科学原理',
-      entity: '机构动作',
-      general: '客观事实',
-    };
-    return map[cat] || '客观事实';
+    switch (cat) {
+      case 'numeric': return t.report.categoryNumeric;
+      case 'version': return t.report.categoryVersion;
+      case 'temporal': return t.report.categoryTemporal;
+      case 'policy': return t.report.categoryPolicy;
+      case 'scientific': return t.report.categoryScientific;
+      case 'entity': return t.report.categoryEntity;
+      default: return t.report.categoryGeneral;
+    }
   };
 
-  const refutedCount = claims.filter(c => c.status === 'refuted' || c.status === 'disputed').length;
   const verifiedCount = claims.filter(c => c.status === 'verified').length;
 
   return (
@@ -95,14 +91,14 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-bold text-slate-900 tracking-tight">
-                4. 完整事实穿透审计与仲裁总览报告
+                {t.report.title}
               </h3>
               <span className="hidden sm:inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10.5px] font-medium text-slate-600 border border-slate-200/60 font-mono">
                 Veritas Fact-Check Report
               </span>
             </div>
             <p className="text-[11px] text-slate-400 mt-0.5">
-              基于腾讯云元宝搜索毫秒级千亿信源与 SenseNova 交叉比对引擎自动生成
+              {t.report.subtitle}
             </p>
           </div>
         </div>
@@ -113,41 +109,31 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
             {verifiedCount > 0 && (
               <button
                 onClick={onInjectCitations}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 transition shadow-2xs"
-                title="自动将元宝搜索权威信源以学术脚注形式注入原文末尾"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 transition shadow-2xs cursor-pointer"
+                title={t.editor.injectCitationsTitle}
               >
                 <BookMarked className="h-3.5 w-3.5 text-emerald-600" />
-                <span>一键注入引用</span>
+                <span>{t.report.injectCitations}</span>
               </button>
             )}
 
-            {/* 一键修正全部幻觉 (暂先隐藏) */}
-            {/* {refutedCount > 0 && (
-              <button
-                onClick={onApplyAllCorrections}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-800 hover:bg-rose-100 transition shadow-2xs"
-                title="一键将原文中的事实错误替换为权威信源修正内容"
-              >
-                <Wand2 className="h-3.5 w-3.5 text-rose-600" />
-                <span>一键修正全部幻觉 ({refutedCount})</span>
-              </button>
-            )} */}
-
+            {/* 隐藏审计背书证书与能效评测按钮
             <button
               onClick={onOpenCertificate}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50 px-3 py-1.5 text-xs font-semibold text-amber-900 shadow-2xs hover:from-amber-100 hover:to-orange-100 transition"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50 px-3 py-1.5 text-xs font-semibold text-amber-900 shadow-2xs hover:from-amber-100 hover:to-orange-100 transition cursor-pointer"
             >
               <Award className="h-3.5 w-3.5 text-amber-600" />
-              <span>导出审计背书证书</span>
+              <span>{t.report.viewCertificate}</span>
             </button>
 
             <button
               onClick={onOpenBenchmark}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-2xs hover:bg-slate-50 transition"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-2xs hover:bg-slate-50 transition cursor-pointer"
             >
               <BarChart3 className="h-3.5 w-3.5 text-slate-500" />
-              <span className="hidden sm:inline">能效评测</span>
+              <span className="hidden sm:inline">{t.report.viewBenchmark}</span>
             </button>
+            */}
           </div>
         )}
       </div>
@@ -159,7 +145,7 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
             {/* Card 1: Health Score */}
             <div className="rounded-xl border border-slate-200/80 bg-gradient-to-br from-white to-slate-50/50 p-4 shadow-2xs flex flex-col justify-between">
-              <span className="text-[11px] font-medium text-slate-500">事实综合健康度</span>
+              <span className="text-[11px] font-medium text-slate-500">{t.report.healthScoreTitle}</span>
               <div className="mt-2 flex items-baseline gap-2">
                 <span className={`text-2xl font-black font-mono tracking-tight ${
                   summary.healthScore >= 80 ? 'text-emerald-600' : summary.healthScore >= 60 ? 'text-amber-600' : 'text-rose-600'
@@ -169,7 +155,11 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
                 <span className={`text-[11px] font-bold ${
                   summary.healthScore >= 80 ? 'text-emerald-700' : summary.healthScore >= 60 ? 'text-amber-700' : 'text-rose-700'
                 }`}>
-                  {summary.healthScore >= 80 ? '可信度极高' : summary.healthScore >= 60 ? '存在时效存疑' : '存在严重幻觉'}
+                  {summary.healthScore >= 80 
+                    ? (lang === 'en' ? 'High Trust' : '可信度极高') 
+                    : summary.healthScore >= 60 
+                    ? (lang === 'en' ? 'Discrepancy' : '存在时效存疑') 
+                    : (lang === 'en' ? 'Hallucinations' : '存在严重幻觉')}
                 </span>
               </div>
               <div className="mt-2 w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
@@ -184,43 +174,43 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
 
             {/* Card 2: Verified */}
             <div className="rounded-xl border border-emerald-200/80 bg-emerald-50/30 p-4 shadow-2xs flex flex-col justify-between">
-              <span className="text-[11px] font-medium text-emerald-800">权威证实通过</span>
+              <span className="text-[11px] font-medium text-emerald-800">{t.report.verified}</span>
               <div className="mt-2 flex items-baseline gap-1.5">
                 <span className="text-2xl font-black font-mono text-emerald-700 tracking-tight">
                   {summary.verified}
                 </span>
-                <span className="text-xs text-emerald-600 font-medium">/ {summary.totalClaims} 项</span>
+                <span className="text-xs text-emerald-600 font-medium">/ {summary.totalClaims} {t.report.itemCount}</span>
               </div>
               <span className="mt-2 text-[10.5px] text-emerald-600 font-mono">
-                由元宝搜索权威多源交叉印证
+                {lang === 'en' ? 'Verified by Yuanbao Search' : '由元宝搜索权威多源交叉印证'}
               </span>
             </div>
 
             {/* Card 3: Refuted */}
             <div className="rounded-xl border border-rose-200/80 bg-rose-50/30 p-4 shadow-2xs flex flex-col justify-between">
-              <span className="text-[11px] font-medium text-rose-800">事实错误 / 幻觉拦截</span>
+              <span className="text-[11px] font-medium text-rose-800">{t.report.refuted}</span>
               <div className="mt-2 flex items-baseline gap-1.5">
                 <span className="text-2xl font-black font-mono text-rose-700 tracking-tight">
                   {summary.refuted}
                 </span>
-                <span className="text-xs text-rose-600 font-medium">项已辟谣</span>
+                <span className="text-xs text-rose-600 font-medium">{t.report.itemCount}</span>
               </div>
               <span className="mt-2 text-[10.5px] text-rose-600 font-mono">
-                已生成官方权威修正事实
+                {lang === 'en' ? 'Official correction generated' : '已生成官方权威修正事实'}
               </span>
             </div>
 
             {/* Card 4: Disputed */}
             <div className="rounded-xl border border-amber-200/80 bg-amber-50/30 p-4 shadow-2xs flex flex-col justify-between">
-              <span className="text-[11px] font-medium text-amber-800">存疑 / 时效差异</span>
+              <span className="text-[11px] font-medium text-amber-800">{t.report.disputed}</span>
               <div className="mt-2 flex items-baseline gap-1.5">
                 <span className="text-2xl font-black font-mono text-amber-700 tracking-tight">
                   {summary.disputed}
                 </span>
-                <span className="text-xs text-amber-600 font-medium">项需核对</span>
+                <span className="text-xs text-amber-600 font-medium">{t.report.itemCount}</span>
               </div>
               <span className="mt-2 text-[10.5px] text-amber-600 font-mono">
-                各权威媒体报道口径存在出入
+                {lang === 'en' ? 'Discrepancy among sources' : '各权威媒体报道口径存在出入'}
               </span>
             </div>
           </div>
@@ -231,10 +221,10 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
               <div className="flex items-center gap-2 flex-wrap">
                 <ShieldCheck className="h-4 w-4 text-sky-600" />
                 <span className="text-xs font-bold text-slate-800">
-                  来源多模态审计：
+                  {lang === 'en' ? 'Multimodal Source Audit:' : '来源多模态审计：'}
                 </span>
                 <span className="text-xs text-slate-700 font-semibold truncate max-w-xs">
-                  {workflowState.sourceNameOrUrl || '原稿来源'}
+                  {workflowState.sourceNameOrUrl || (lang === 'en' ? 'Source' : '原稿来源')}
                 </span>
                 {workflowState.inspectionTask?.format && (
                   <span className="rounded bg-sky-100/90 px-1.5 py-0.5 text-[10.5px] font-mono font-bold text-sky-800">
@@ -256,7 +246,11 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
               {workflowState.extractionTask?.images && workflowState.extractionTask.images.length > 0 && (
                 <div className="flex items-center gap-1.5 text-xs text-teal-800 font-medium">
                   <Sparkles className="h-3.5 w-3.5 text-teal-600" />
-                  <span>已捕获 {workflowState.extractionTask.images.length} 张技术图表/内嵌插图</span>
+                  <span>
+                    {lang === 'en' 
+                      ? `Captured ${workflowState.extractionTask.images.length} technical charts/figures`
+                      : `已捕获 ${workflowState.extractionTask.images.length} 张技术图表/内嵌插图`}
+                  </span>
                 </div>
               )}
             </div>
@@ -267,54 +261,56 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
             <div className="flex items-center gap-1.5 rounded-xl bg-slate-100/80 p-1 text-xs">
               <button
                 onClick={() => setFilter('all')}
-                className={`rounded-lg px-3 py-1 text-center text-[11px] font-medium transition ${
+                className={`rounded-lg px-3 py-1 text-center text-[11px] font-medium transition cursor-pointer ${
                   filter === 'all' 
                     ? 'bg-white text-slate-900 shadow-2xs font-semibold' 
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                全部命题 ({summary.totalClaims})
+                {t.report.tabAll} ({summary.totalClaims})
               </button>
 
               <button
                 onClick={() => setFilter('verified')}
-                className={`rounded-lg px-3 py-1 text-center text-[11px] font-medium transition flex items-center gap-1.5 ${
+                className={`rounded-lg px-3 py-1 text-center text-[11px] font-medium transition flex items-center gap-1.5 cursor-pointer ${
                   filter === 'verified' 
                     ? 'bg-white text-emerald-700 shadow-2xs font-semibold' 
                     : 'text-slate-600 hover:text-emerald-700'
                 }`}
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                权威证实 ({summary.verified})
+                {t.report.tabVerified} ({summary.verified})
               </button>
 
               <button
                 onClick={() => setFilter('refuted')}
-                className={`rounded-lg px-3 py-1 text-center text-[11px] font-medium transition flex items-center gap-1.5 ${
+                className={`rounded-lg px-3 py-1 text-center text-[11px] font-medium transition flex items-center gap-1.5 cursor-pointer ${
                   filter === 'refuted' 
                     ? 'bg-white text-rose-700 shadow-2xs font-semibold' 
                     : 'text-slate-600 hover:text-rose-700'
                 }`}
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
-                事实错误 ({summary.refuted})
+                {t.report.tabRefuted} ({summary.refuted})
               </button>
 
               <button
                 onClick={() => setFilter('disputed')}
-                className={`rounded-lg px-3 py-1 text-center text-[11px] font-medium transition flex items-center gap-1.5 ${
+                className={`rounded-lg px-3 py-1 text-center text-[11px] font-medium transition flex items-center gap-1.5 cursor-pointer ${
                   filter === 'disputed' 
                     ? 'bg-white text-amber-700 shadow-2xs font-semibold' 
                     : 'text-slate-600 hover:text-amber-700'
                 }`}
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                存疑时效 ({summary.disputed})
+                {t.report.tabDisputed} ({summary.disputed})
               </button>
             </div>
 
             <span className="text-[11px] font-mono text-slate-400">
-              共筛选展示 {filteredClaims.length} 项审校档案
+              {lang === 'en' 
+                ? `Showing ${filteredClaims.length} records` 
+                : `共筛选展示 ${filteredClaims.length} 项审校档案`}
             </span>
           </div>
 
@@ -364,7 +360,7 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
                           <span className={`h-1.5 w-1.5 rounded-full ${
                             isVerified ? 'bg-emerald-500' : isDisputed ? 'bg-amber-500' : isRefuted ? 'bg-rose-500' : 'bg-slate-400'
                           }`} />
-                          {isVerified ? '🟢 权威证实' : isDisputed ? '🟡 存疑 / 时效差异' : isRefuted ? '🔴 事实错误 / 幻觉' : '缺乏信源'}
+                          {isVerified ? t.report.verdictVerified : isDisputed ? t.report.verdictDisputed : isRefuted ? t.report.verdictRefuted : t.report.verdictUnverifiable}
                         </span>
 
                         {/* Category */}
@@ -375,20 +371,20 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
                         {/* Causal Tag */}
                         {claim.isCausalClaim && (
                           <span className="rounded-md bg-purple-50 px-2 py-0.5 text-[10px] font-bold text-purple-700 border border-purple-200">
-                            🔗 因果逻辑链
+                            🔗 {t.report.causalBadge}
                           </span>
                         )}
 
                         {/* Multi-probe Tag */}
                         {claim.searchKeywords && claim.searchKeywords.length > 1 && (
                           <span className="rounded-md bg-cyan-50 px-2 py-0.5 text-[10px] font-bold text-cyan-700 border border-cyan-200">
-                            🔍 {claim.searchKeywords.length}路检索探针
+                            🔍 {claim.searchKeywords.length} {lang === 'en' ? 'Probes' : '路检索探针'}
                           </span>
                         )}
 
                         {/* Confidence */}
                         <span className="text-[11px] font-mono text-slate-400 ml-auto">
-                          元宝置信度: <strong className="text-slate-700">{claim.confidence}%</strong>
+                          {t.report.confidenceLabel}: <strong className="text-slate-700">{claim.confidence}%</strong>
                         </span>
                       </div>
 
@@ -411,13 +407,13 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
                         <div className="rounded-xl bg-purple-50/60 p-3 border border-purple-200/80 text-xs">
                           {claim.causalPremise && (
                             <div className="mb-1 flex items-start gap-1.5 text-purple-950">
-                              <span className="font-bold flex-shrink-0 text-purple-800">🔗 因果归因逻辑:</span>
+                              <span className="font-bold flex-shrink-0 text-purple-800">🔗 {t.report.causalPremiseLabel}</span>
                               <span className="font-medium">{claim.causalPremise}</span>
                             </div>
                           )}
                           {claim.contextSnippet && (
                             <div className="flex items-start gap-1.5 text-slate-600">
-                              <span className="font-semibold flex-shrink-0 text-slate-500">📖 原文语境切片:</span>
+                              <span className="font-semibold flex-shrink-0 text-slate-500">📖 {t.report.contextSnippetLabel}</span>
                               <span className="italic">“...{claim.contextSnippet}...”</span>
                             </div>
                           )}
@@ -429,7 +425,11 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
                         <div className="rounded-xl bg-cyan-50/70 p-3 border border-cyan-200/80 text-xs">
                           <div className="flex items-center gap-1.5 text-cyan-950 font-semibold mb-1.5">
                             <Search className="h-3.5 w-3.5 text-cyan-700" />
-                            <span>AI 判定复合事实 · 自适应推进 {claim.searchKeywords.length} 组检索探针:</span>
+                            <span>
+                              {lang === 'en' 
+                                ? `AI Composite Claim · Adaptively launched ${claim.searchKeywords.length} targeted probes:`
+                                : `AI 判定复合事实 · 自适应推进 ${claim.searchKeywords.length} 组检索探针:`}
+                            </span>
                           </div>
                           <div className="flex flex-wrap gap-1.5">
                             {claim.searchKeywords.map((kw, kwIdx) => (
@@ -437,7 +437,9 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
                                 key={kwIdx}
                                 className="inline-flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1 text-[11px] font-mono font-semibold text-cyan-900 border border-cyan-200 shadow-2xs"
                               >
-                                <span className="text-[9.5px] text-cyan-600 font-bold bg-cyan-100/70 px-1 rounded">探针 {kwIdx + 1}</span>
+                                <span className="text-[9.5px] text-cyan-600 font-bold bg-cyan-100/70 px-1 rounded">
+                                  {lang === 'en' ? `Probe ${kwIdx + 1}` : `探针 ${kwIdx + 1}`}
+                                </span>
                                 {kw}
                               </span>
                             ))}
@@ -446,7 +448,7 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
                       ) : claim.searchKeyword ? (
                         <div className="flex items-center gap-2 text-[11px] text-slate-500 font-mono bg-slate-100/70 px-3 py-1.5 rounded-xl border border-slate-200/60">
                           <Search className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
-                          <span className="text-slate-400">AI 检索探针词:</span>
+                          <span className="text-slate-400">{t.report.searchKeywordsLabel}</span>
                           <span className="text-slate-800 font-semibold">{claim.searchKeyword}</span>
                         </div>
                       ) : null}
@@ -455,7 +457,7 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
                       <div className="rounded-xl bg-white p-3.5 border border-slate-200/80 shadow-2xs">
                         <div className="flex items-center gap-1.5 text-slate-700 font-semibold mb-1.5">
                           <Gavel className="h-3.5 w-3.5 text-slate-500" />
-                          <span>智能体交叉仲裁理由（含因果有效性检验）</span>
+                          <span>{lang === 'en' ? 'Evidence Cross-Arbitration Reasoning (With Causal Audit)' : '智能体交叉仲裁理由（含因果有效性检验）'}</span>
                         </div>
                         <p className="text-slate-600 leading-relaxed font-sans text-[12px]">
                           {claim.reasoning}
@@ -468,15 +470,8 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
                           <div className="flex items-center justify-between mb-1.5">
                             <span className="font-semibold text-rose-900 flex items-center gap-1.5">
                               <ShieldAlert className="h-4 w-4 text-rose-600" />
-                              官方权威辟谣 / 修正事实建议:
+                              {t.report.correctionTitle}
                             </span>
-                            {/* 一键替换原文 (暂先隐藏) */}
-                            {/* <button
-                              onClick={() => onApplySingleCorrection(claim)}
-                              className="rounded-lg bg-rose-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-rose-700 transition shadow-xs active:scale-[0.98]"
-                            >
-                              一键替换原文
-                            </button> */}
                           </div>
                           <p className="text-rose-950 font-medium leading-relaxed text-[12px]">
                             {claim.correction}
@@ -489,7 +484,7 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
                         <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
                           <span className="font-semibold text-slate-700 flex items-center gap-1.5 text-xs">
                             <Globe2 className="h-3.5 w-3.5 text-yuanbao-600" />
-                            元宝搜索权威召回信源证据 ({claim.sources.length} 篇)
+                            {t.report.evidenceSourcesTitle} ({claim.sources.length})
                           </span>
 
                           <div className="flex items-center gap-2">
@@ -501,10 +496,10 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
                                   setSelectedSiteFilter('all');
                                 }}
                                 className="inline-flex items-center gap-1 rounded-md bg-yuanbao-50 hover:bg-yuanbao-100/80 px-2 py-0.5 text-[11px] font-semibold text-yuanbao-800 border border-yuanbao-200 transition active:scale-[0.98] cursor-pointer"
-                                title="点击弹窗查看所有来源网站与证据"
+                                title={t.report.viewAllSources}
                               >
-                                <ExternalLink className="h-3 w-3 text-yuanbao-600" />
-                                <span>窗口查看全部 ({claim.sources.length})</span>
+                                <Layers className="h-3 w-3 text-yuanbao-600" />
+                                <span>{lang === 'en' ? `View All (${claim.sources.length})` : `窗口查看全部 (${claim.sources.length})`}</span>
                               </button>
                             )}
 
@@ -512,17 +507,17 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
                               <button
                                 onClick={() => handleCopyCitation(claim)}
                                 className="inline-flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-800 font-medium transition cursor-pointer"
-                                title="复制规范学术文献引用格式"
+                                title={t.report.copyCitationBtn}
                               >
                                 {copiedId === claim.id ? (
                                   <>
                                     <Check className="h-3 w-3 text-emerald-600" />
-                                    <span className="text-emerald-700">已复制引用</span>
+                                    <span className="text-emerald-700">{t.report.copied}</span>
                                   </>
                                 ) : (
                                   <>
                                     <Copy className="h-3 w-3" />
-                                    <span>复制引用</span>
+                                    <span>{t.report.copyCitationBtn}</span>
                                   </>
                                 )}
                               </button>
@@ -543,7 +538,7 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
                                     <img src={src.favicon} alt="" className="h-3.5 w-3.5 rounded flex-shrink-0" />
                                   ) : (
                                     <div className="h-3.5 w-3.5 rounded bg-yuanbao-100 text-yuanbao-700 text-[9px] flex items-center justify-center font-bold">
-                                      源
+                                      {lang === 'en' ? 'S' : '源'}
                                     </div>
                                   )}
                                   <span className="font-semibold text-slate-900 truncate text-[12px]">
@@ -563,7 +558,7 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
                                     rel="noreferrer"
                                     className="inline-flex items-center gap-0.5 text-[11px] text-slate-500 hover:text-yuanbao-700 transition flex-shrink-0 font-medium"
                                   >
-                                    原文直达 <ArrowUpRight className="h-3 w-3" />
+                                    {t.report.visitSource} <ArrowUpRight className="h-3 w-3" />
                                   </a>
                                 )}
                               </div>
@@ -586,9 +581,13 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
                             className="w-full mt-2.5 flex items-center justify-center gap-2 rounded-xl border border-yuanbao-200/90 bg-gradient-to-r from-yuanbao-50/60 via-white to-yuanbao-50/60 hover:from-yuanbao-100/70 hover:to-yuanbao-100/70 p-2.5 text-xs font-semibold text-yuanbao-900 transition shadow-2xs hover:shadow-xs group cursor-pointer active:scale-[0.99]"
                           >
                             <Layers className="h-3.5 w-3.5 text-yuanbao-600 group-hover:scale-110 transition-transform" />
-                            <span>查看更多信源 · 弹窗查看全部 {claim.sources.length} 篇权威来源网站与完整段落</span>
+                            <span>
+                              {lang === 'en' 
+                                ? `View All ${claim.sources.length} Authoritative Sources & Full Passages` 
+                                : `查看更多信源 · 弹窗查看全部 ${claim.sources.length} 篇权威来源网站与完整段落`}
+                            </span>
                             <span className="rounded-full bg-yuanbao-200/80 px-2 py-0.5 text-[10.5px] font-mono text-yuanbao-900 font-bold">
-                              还有 {claim.sources.length - 3} 篇 ▾
+                              {lang === 'en' ? `+${claim.sources.length - 3} more ▾` : `还有 ${claim.sources.length - 3} 篇 ▾`}
                             </span>
                           </button>
                         )}
@@ -606,9 +605,13 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 mb-3 border border-slate-200/60">
             <Search className="h-5 w-5" />
           </div>
-          <p className="text-sm font-semibold text-slate-700">等待全网事实穿透完成</p>
+          <p className="text-sm font-semibold text-slate-700">
+            {lang === 'en' ? 'Waiting for fact-checking to complete' : '等待全网事实穿透完成'}
+          </p>
           <p className="mt-1.5 text-xs text-slate-400 max-w-sm leading-relaxed">
-            点击「开始检查」，检测完成后页面将自动平滑滚动至此处，并展开完整事实健康度画像、辟谣仲裁档案与学术引用。
+            {lang === 'en'
+              ? 'Click "Start Audit". Once finished, the page will smoothly scroll here to reveal health scores, verdicts, and citations.'
+              : '点击「开始检查」，检测完成后页面将自动平滑滚动至此处，并展开完整事实健康度画像、辟谣仲裁档案与学术引用。'}
           </p>
         </div>
       )}
@@ -632,14 +635,14 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <h3 className="text-sm font-bold text-slate-900 tracking-tight">
-                      元宝搜索全量信源证据档案
+                      {t.report.modalSourcesTitle}
                     </h3>
                     <span className="rounded-full bg-yuanbao-100 px-2 py-0.5 text-[10.5px] font-bold text-yuanbao-800 font-mono">
-                      共 {selectedSourcesClaim.sources.length} 篇权威信源
+                      {selectedSourcesClaim.sources.length} {t.report.evidenceSourcesTitle}
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-400 truncate mt-0.5">
-                    腾讯云元宝搜索 WSA · 千亿级高公信力信源穿透检索
+                    {lang === 'en' ? 'Tencent Cloud Yuanbao Search WSA · Multi-hundred-billion index' : '腾讯云元宝搜索 WSA · 千亿级高公信力信源穿透检索'}
                   </p>
                 </div>
               </div>
@@ -648,7 +651,7 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
                 type="button"
                 onClick={() => setSelectedSourcesClaim(null)}
                 className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition flex-shrink-0 cursor-pointer"
-                title="关闭窗口 (Esc)"
+                title="Close (Esc)"
               >
                 <X className="h-4.5 w-4.5" />
               </button>
@@ -659,10 +662,12 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
               {/* Claim Context */}
               <div className="rounded-xl border border-slate-200/70 bg-white p-3 shadow-2xs">
                 <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 mb-1.5 flex-wrap gap-1.5">
-                  <span>核验命题断言</span>
+                  <span>{lang === 'en' ? 'Verified Claim Assertion' : '核验命题断言'}</span>
                   {selectedSourcesClaim.searchKeywords && selectedSourcesClaim.searchKeywords.length > 1 ? (
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-cyan-800 font-mono text-[10.5px] font-bold">AI {selectedSourcesClaim.searchKeywords.length}路探针:</span>
+                      <span className="text-cyan-800 font-mono text-[10.5px] font-bold">
+                        {lang === 'en' ? `AI ${selectedSourcesClaim.searchKeywords.length} Probes:` : `AI ${selectedSourcesClaim.searchKeywords.length}路探针:`}
+                      </span>
                       {selectedSourcesClaim.searchKeywords.map((kw, i) => (
                         <span key={i} className="rounded bg-cyan-50 px-1.5 py-0.2 font-mono text-[10px] text-cyan-900 border border-cyan-200 font-medium">
                           {kw}
@@ -671,7 +676,7 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
                     </div>
                   ) : (
                     <span className="font-mono text-yuanbao-700">
-                      搜索探针: “{selectedSourcesClaim.searchKeyword}”
+                      {lang === 'en' ? 'Probe:' : '搜索探针:'} “{selectedSourcesClaim.searchKeyword}”
                     </span>
                   )}
                 </div>
@@ -689,7 +694,7 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
                   <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 scrollbar-none">
                     <span className="text-[11px] text-slate-400 font-medium flex-shrink-0 flex items-center gap-1">
                       <Filter className="h-3 w-3" />
-                      站点筛选:
+                      {t.report.filterBySite}
                     </span>
                     <button
                       type="button"
@@ -700,7 +705,7 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
                           : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
                       }`}
                     >
-                      全部站点 ({selectedSourcesClaim.sources.length})
+                      {t.report.allSites} ({selectedSourcesClaim.sources.length})
                     </button>
                     {uniqueSites.map(site => {
                       const count = selectedSourcesClaim.sources.filter(s => s.site === site).length;
@@ -735,7 +740,7 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
                 if (displayedSources.length === 0) {
                   return (
                     <div className="text-center py-8 text-slate-400 text-xs">
-                      该站点暂无筛选结果
+                      {lang === 'en' ? 'No sources under this site filter' : '该站点暂无筛选结果'}
                     </div>
                   );
                 }
@@ -756,7 +761,7 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
                           <img src={src.favicon} alt="" className="h-4 w-4 rounded flex-shrink-0" />
                         ) : (
                           <div className="h-4 w-4 rounded bg-yuanbao-100 text-yuanbao-700 text-[10px] flex items-center justify-center font-bold flex-shrink-0">
-                            源
+                            {lang === 'en' ? 'S' : '源'}
                           </div>
                         )}
 
@@ -777,17 +782,17 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
                             type="button"
                             onClick={() => handleCopyUrl(src.url)}
                             className="inline-flex items-center gap-1 rounded-md bg-slate-50 hover:bg-slate-100 px-2 py-0.5 text-[10.5px] font-medium text-slate-600 transition cursor-pointer"
-                            title="复制来源网页链接"
+                            title={t.report.copyLink}
                           >
                             {copiedUrl === src.url ? (
                               <>
                                 <Check className="h-2.5 w-2.5 text-emerald-600" />
-                                <span className="text-emerald-700">已复制链接</span>
+                                <span className="text-emerald-700">{t.report.copied}</span>
                               </>
                             ) : (
                               <>
                                 <Copy className="h-2.5 w-2.5" />
-                                <span>复制链接</span>
+                                <span>{t.report.copyLink}</span>
                               </>
                             )}
                           </button>
@@ -800,7 +805,7 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
                             rel="noreferrer"
                             className="inline-flex items-center gap-1 rounded-md bg-yuanbao-50 hover:bg-yuanbao-100 px-2.5 py-0.5 text-[10.5px] font-bold text-yuanbao-800 transition shadow-2xs hover:shadow-xs active:scale-[0.98]"
                           >
-                            <span>原文直达</span>
+                            <span>{t.report.visitSource}</span>
                             <ArrowUpRight className="h-3 w-3" />
                           </a>
                         )}
@@ -816,7 +821,7 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
 
                     {/* Passage Quote */}
                     <div className="rounded-lg bg-slate-50/80 p-2.5 border border-slate-100 font-sans text-xs text-slate-600 leading-relaxed">
-                      {src.passage}
+                      {src.passage || t.report.noPassage}
                     </div>
                   </div>
                 ));
@@ -826,14 +831,14 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({
             {/* Modal Footer */}
             <div className="border-t border-slate-100 bg-white px-5 py-3 flex items-center justify-between flex-shrink-0 text-xs">
               <span className="text-[11px] text-slate-400 font-mono">
-                腾讯云元宝搜索 WSA · 千亿知识图谱
+                {lang === 'en' ? 'Tencent Cloud Yuanbao Search WSA' : '腾讯云元宝搜索 WSA · 千亿知识图谱'}
               </span>
               <button
                 type="button"
                 onClick={() => setSelectedSourcesClaim(null)}
                 className="rounded-xl bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 transition shadow-xs active:scale-[0.98] cursor-pointer"
               >
-                完成浏览
+                {lang === 'en' ? 'Done' : '完成浏览'}
               </button>
             </div>
           </div>

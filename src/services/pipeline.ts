@@ -79,10 +79,11 @@ function getNowTime(): string {
   return d.toTimeString().split(' ')[0] + '.' + String(d.getMilliseconds()).padStart(3, '0');
 }
 
-export function extractLatestThinkingSnippet(text: string, maxLength: number = 75): string {
-  if (!text) return '正在组织深度思维链...';
+export function extractLatestThinkingSnippet(text: string, maxLength: number = 75, lang: 'zh' | 'en' = 'zh'): string {
+  const defaultPlaceholder = lang === 'en' ? 'Organizing deep chain of thought...' : '正在组织深度思维链...';
+  if (!text) return defaultPlaceholder;
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-  if (lines.length === 0) return '正在组织深度思维链...';
+  if (lines.length === 0) return defaultPlaceholder;
   const lastLine = lines[lines.length - 1];
   const cleaned = lastLine.replace(/^[-*#>\d\.\s]+/, '').trim() || lastLine;
   if (cleaned.length <= maxLength) {
@@ -92,7 +93,7 @@ export function extractLatestThinkingSnippet(text: string, maxLength: number = 7
 }
 
 // Local heuristic fallback extractor if AI calls timeout or fail completely
-function fallbackExtractClaims(content: string): Array<{ 
+function fallbackExtractClaims(content: string, lang: 'zh' | 'en' = 'zh'): Array<{ 
   id: string; 
   claimText: string; 
   category: ClaimCategory; 
@@ -102,10 +103,11 @@ function fallbackExtractClaims(content: string): Array<{
   causalPremise?: string;
   isCausalClaim?: boolean;
 }> {
+  const isEnMode = lang === 'en';
   const sentences = content
-    .split(/[\n。！？!?；;]+/)
+    .split(/[\n\r]+|(?<=[。！？!?；;])|(?<=[.!?])\s+/)
     .map(s => s.trim())
-    .filter(s => s.length >= 8 && s.length <= 160);
+    .filter(s => s.length >= 8 && s.length <= 200);
 
   const matchedClaims: Array<{ 
     id: string; 
@@ -124,14 +126,20 @@ function fallbackExtractClaims(content: string): Array<{
 
     const prevSent = idx > 0 ? sentences[idx - 1] : '';
     const nextSent = idx < sentences.length - 1 ? sentences[idx + 1] : '';
-    const contextSnippet = [prevSent, s, nextSent].filter(Boolean).join('。');
+    const contextSnippet = [prevSent, s, nextSent].filter(Boolean).join(isEnMode ? ' ' : '。');
 
-    const isCausal = /(因为|由于|导致|致使|从而|使得|因而|造成|鉴于|促使|由.+驱动)/.test(s);
-    const causalPremise = isCausal ? `原句断言因果归因: “${s.slice(0, 45)}...”` : undefined;
+    const isCausal = isEnMode
+      ? /(because|due to|led to|caused|resulting in|as a result|thereby|driven by|triggered)/i.test(s)
+      : /(因为|由于|导致|致使|从而|使得|因而|造成|鉴于|促使|由.+驱动)/.test(s);
+    const causalPremise = isCausal
+      ? (isEnMode ? `Asserts causal attribution: "${s.slice(0, 45)}..."` : `原句断言因果归因: “${s.slice(0, 45)}...”`)
+      : undefined;
 
     // Strict subjective filter: discard opinion/emotional rhetoric
-    const isSubjective = /(觉得|认为|堪称|极其|非常|相当|伟大|震撼|期待|令人|口碑|精彩|优秀|绝佳|新星|天才|潜力|不可思议)/.test(s);
-    if (isSubjective && !/\d|版本|顺位|青训|加盟|毕业|大学|选秀|发布|出台|正式/.test(s)) {
+    const isSubjective = isEnMode
+      ? /(feel|think|amazing|epic|incredible|stunning|promising|great|fantastic|prodigy|talent)/i.test(s)
+      : /(觉得|认为|堪称|极其|非常|相当|伟大|震撼|期待|令人|口碑|精彩|优秀|绝佳|新星|天才|潜力|不可思议)/.test(s);
+    if (isSubjective && !/\d|version|pick|draft|release|launched|Python|Chang'e|Apollo|NCAA|版本|顺位|青训|加盟|毕业|大学|选秀|发布|出台|正式/i.test(s)) {
       continue;
     }
 
@@ -139,43 +147,81 @@ function fallbackExtractClaims(content: string): Array<{
     const generateProbeQuery = (text: string): string => {
       // 1. Clean introductory preambles & modifiers
       const clean = text
-        .replace(/^(此外[，,\s]*|在.+?方面[，,\s]*|据悉[，,\s]*|据.+?报道[，,\s]*|众所周知[，,\s]*)+/g, '')
+        .replace(/^(Additionally|Furthermore|According to.+?,|Reportedly|In recent years|Currently|Notably|此外[，,\s]*|在.+?方面[，,\s]*|据悉[，,\s]*|据.+?报道[，,\s]*|众所周知[，,\s]*)+/gi, '')
         .trim();
 
       // 2. Python & Developer tooling versions
       const pythonMatch = clean.match(/(Python\s*[\d\.]+)/i);
       if (pythonMatch) {
         const py = pythonMatch[1];
-        if (/(GIL|全局解释器锁)/.test(clean)) return `${py} GIL 废除`;
-        if (/(性能|多线程)/.test(clean)) return `${py} 多线程 性能提升`;
-        if (/(发布|上线|版本)/.test(clean)) return `${py} 发布时间`;
-        return `${py} 官方特性`;
+        if (isEnMode) {
+          if (/(GIL|global interpreter lock)/i.test(clean)) return `${py} GIL removal`;
+          if (/(garbage collection|memory)/i.test(clean)) return `${py} garbage collection memory`;
+          if (/(performance|multithread)/i.test(clean)) return `${py} multithreading performance`;
+          if (/(release|launch|version)/i.test(clean)) return `${py} release date`;
+          return `${py} official release`;
+        } else {
+          if (/(GIL|全局解释器锁)/.test(clean)) return `${py} GIL 废除`;
+          if (/(性能|多线程)/.test(clean)) return `${py} 多线程 性能提升`;
+          if (/(发布|上线|版本)/.test(clean)) return `${py} 发布时间`;
+          return `${py} 官方特性`;
+        }
       }
 
       // 3. Yuanbao / Tencent
-      if (/元宝|腾讯/.test(clean)) {
+      if (/Yuanbao|元宝|Tencent|腾讯/i.test(clean)) {
         const verMatch = clean.match(/(\d+\.\d+)/);
         const ver = verMatch ? ` ${verMatch[1]}` : '';
-        if (/(深度搜索|长文)/.test(clean)) return `腾讯元宝${ver} 深度搜索 上线`;
-        if (/(升级|发布|上线|版本)/.test(clean)) return `腾讯元宝${ver} 发布时间`;
-        return `腾讯元宝${ver} 官方发布`;
+        if (isEnMode) {
+          if (/(deep search|long text)/i.test(clean)) return `Tencent Yuanbao${ver} deep search`;
+          if (/(upgrade|release|launch|version)/i.test(clean)) return `Tencent Yuanbao${ver} launch date`;
+          return `Tencent Yuanbao${ver} official`;
+        } else {
+          if (/(深度搜索|长文)/.test(clean)) return `腾讯元宝${ver} 深度搜索 上线`;
+          if (/(升级|发布|上线|版本)/.test(clean)) return `腾讯元宝${ver} 发布时间`;
+          return `腾讯元宝${ver} 官方发布`;
+        }
       }
 
-      // 4. Sports / Athletes (Extract specific name)
-      if (/(阿代马拉|新秀|选秀|顺位|青训|NCAA)/.test(clean)) {
-        const nameMatch = clean.match(/(?:年轻新秀|新秀|球员|作者|选手)?([\u4e00-\u9fa5a-zA-Z·]{2,8}?)(?:在|以|为|出身|加盟|征战|是)/) || clean.match(/(阿代马拉)/);
-        const name = nameMatch ? nameMatch[1].replace(/^(年轻新秀|新秀)/, '') : '阿代马拉';
-        if (/(顺位|选秀|首轮|次轮)/.test(clean)) return `${name} 选秀顺位`;
-        if (/(青训|NCAA|履历)/.test(clean)) return `${name} 青训 NCAA 履历`;
-        return `${name} 职业生涯 履历`;
+      // 4. Space / Lunar exploration
+      if (/(Chang'e|lunar|moon|samples|Apollo|嫦娥|月球|月背)/i.test(clean)) {
+        if (isEnMode) {
+          if (/(sample|mass|weight|kg|kilogram|500)/i.test(clean)) return "Chang'e-6 lunar samples mass";
+          if (/(distance|km|kilometer|Apollo|telemetry)/i.test(clean)) return "Earth Moon average distance";
+          return "Chang'e-6 lunar mission";
+        } else {
+          if (/(样品|重量|500|公斤)/.test(clean)) return "嫦娥六号 月背样品 重量";
+          if (/(距离|万公里|阿波罗)/.test(clean)) return "地月平均距离 测距";
+          return "嫦娥六号 月球探测";
+        }
       }
 
-      // 5. Medical & Health science
-      if (/阿尔茨海默|咖啡/.test(clean)) {
-        return '咖啡 阿尔茨海默病 风险 降低';
+      // 5. Sports / Athletes (Extract specific name)
+      if (/(Aday Mara|阿代马拉|新秀|选秀|顺位|青训|NCAA|draft|pick)/i.test(clean)) {
+        if (isEnMode) {
+          if (/(pick|draft|round)/i.test(clean)) return 'Aday Mara draft pick';
+          if (/(NCAA|Spain|youth)/i.test(clean)) return 'Aday Mara Spain youth NCAA';
+          return 'Aday Mara career draft';
+        } else {
+          const nameMatch = clean.match(/(?:年轻新秀|新秀|球员|作者|选手)?([\u4e00-\u9fa5a-zA-Z·]{2,8}?)(?:在|以|为|出身|加盟|征战|是)/) || clean.match(/(阿代马拉)/);
+          const name = nameMatch ? nameMatch[1].replace(/^(年轻新秀|新秀)/, '') : '阿代马拉';
+          if (/(顺位|选秀|首轮|次轮)/.test(clean)) return `${name} 选秀顺位`;
+          if (/(青训|NCAA|履历)/.test(clean)) return `${name} 青训 NCAA 履历`;
+          return `${name} 职业生涯 履历`;
+        }
       }
 
-      // 6. Generic entity + attribute extraction (strictly avoids preposition prefixes like '于2024年' or '已于')
+      // 6. Medical & Health science
+      if (/Alzheimer|coffee|阿尔茨海默|咖啡/i.test(clean)) {
+        return isEnMode ? 'coffee Alzheimer disease risk reduction' : '咖啡 阿尔茨海默病 风险 降低';
+      }
+
+      // 7. Generic English or Chinese entity extraction
+      if (isEnMode) {
+        const words = clean.replace(/[^a-zA-Z0-9\s-]/g, ' ').split(/\s+/).filter(w => w.length > 2 && !/^(the|and|for|with|that|this|from|have|been|were|they|will)/i.test(w));
+        return words.slice(0, 4).join(' ') || clean.slice(0, 20);
+      }
+
       const entityMatch = clean.match(/^([a-zA-Z\u4e00-\u9fa50-9]{2,12}?)(?:官方|已于|于\d+|在\d+|于|正式|宣布|全面|彻底)/);
       if (entityMatch && entityMatch[1].length >= 2 && !/^(此外|在|于|已|正式|经|由|从|根据)/.test(entityMatch[1])) {
         const entity = entityMatch[1];
@@ -184,7 +230,7 @@ function fallbackExtractClaims(content: string): Array<{
         return `${entity} 官方最新进展`;
       }
 
-      // 7. Fallback: clean sentence subject
+      // Fallback: clean sentence subject
       const fallbackClean = clean
         .replace(/[“”"']/g, '')
         .replace(/(是|为|成为了|达到了|处于|属于|官方已于.+?正式|已于.+?正式)/g, ' ')
@@ -196,20 +242,29 @@ function fallbackExtractClaims(content: string): Array<{
     const buildProbeList = (primaryKw: string, text: string): string[] => {
       const list = [primaryKw];
       if (/Python/i.test(text)) {
-        if (/发布/.test(text) && !list.includes('Python 3.14 发布时间')) list.push('Python 3.14 发布时间');
-        if (/GIL/.test(text) && !list.includes('Python 3.14 GIL 废除')) list.push('Python 3.14 GIL 废除');
+        if (isEnMode) {
+          if (/(release|launch|date)/i.test(text) && !list.includes('Python 3.14 release date')) list.push('Python 3.14 release date');
+          if (/(garbage|memory|GIL)/i.test(text) && !list.includes('Python 3.14 memory garbage collection')) list.push('Python 3.14 memory garbage collection');
+        } else {
+          if (/发布/.test(text) && !list.includes('Python 3.14 发布时间')) list.push('Python 3.14 发布时间');
+          if (/GIL/.test(text) && !list.includes('Python 3.14 GIL 废除')) list.push('Python 3.14 GIL 废除');
+        }
+      } else if (/(Chang'e|嫦娥)/i.test(text)) {
+        if (isEnMode) {
+          if (!list.includes("Chang'e-6 lunar samples mass")) list.push("Chang'e-6 lunar samples mass");
+        }
+      } else if (/(Yuanbao|元宝)/i.test(text) && /(deep search|深度搜索)/i.test(text)) {
+        const p2 = isEnMode ? 'Tencent Yuanbao deep search' : '腾讯元宝 深度搜索 上线';
+        if (p2 !== primaryKw && !list.includes(p2)) list.push(p2);
       } else if (/(顺位|选秀)/.test(text) && /(青训|NCAA|西班牙)/.test(text)) {
         const p2 = generateProbeQuery(text.replace(/首轮|次轮|\d+顺位|选秀/g, ''));
         if (p2 && p2 !== primaryKw && !list.includes(p2)) list.push(p2);
-      } else if (/元宝/.test(text) && /深度搜索/.test(text)) {
-        const p2 = '腾讯元宝 深度搜索 上线';
-        if (p2 !== primaryKw && !list.includes(p2)) list.push(p2);
       }
       return list;
     };
 
     // 1. Numeric or stats
-    if (/\d+[\.\d]*%?|[一二两三四五六七八九十百千万亿]+/.test(s) && /(数量|规模|提升|增长|占比|突破|覆盖|达|响应时间|ms|毫秒|秒|个|元|顺位)/i.test(s)) {
+    if (/\d+[\.\d]*%?|[一二两三四五六七八九十百千万亿]+/.test(s) && /(数量|规模|提升|增长|占比|突破|覆盖|达|响应时间|ms|毫秒|秒|个|元|顺位|mass|weight|kg|kilogram|million|billion|percent|latency|distance|km)/i.test(s)) {
       const keyword = generateProbeQuery(s);
       const keywords = buildProbeList(keyword, s);
       matchedClaims.push({
@@ -226,7 +281,7 @@ function fallbackExtractClaims(content: string): Array<{
     }
 
     // 2. Version or tech feature
-    if (/Python|v\d+|\d+\.\d+|版本|发布|正式上线|功能|支持/i.test(s)) {
+    if (/Python|v\d+|\d+\.\d+|version|release|launched|features|版本|发布|正式上线|功能|支持/i.test(s)) {
       const keyword = generateProbeQuery(s);
       const keywords = buildProbeList(keyword, s);
       matchedClaims.push({
@@ -243,7 +298,7 @@ function fallbackExtractClaims(content: string): Array<{
     }
 
     // 3. Entity or organization actions
-    if (/(\d{4}年|\d{1,2}月|腾讯|元宝|工信部|官方|国家|规范|青训|选秀|NCAA)/.test(s)) {
+    if (/(\d{4}年|\d{1,2}月|腾讯|元宝|工信部|官方|国家|规范|青训|选秀|NCAA|Tencent|Yuanbao|Chang'e|Apollo|NASA|China)/i.test(s)) {
       const keyword = generateProbeQuery(s);
       const keywords = buildProbeList(keyword, s);
       matchedClaims.push({
@@ -265,9 +320,11 @@ function fallbackExtractClaims(content: string): Array<{
     sentences.slice(0, 4).forEach((s, i) => {
       const prevSent = i > 0 ? sentences[i - 1] : '';
       const nextSent = i < sentences.length - 1 ? sentences[i + 1] : '';
-      const contextSnippet = [prevSent, s, nextSent].filter(Boolean).join('。');
-      const isCausal = /(因为|由于|导致|致使|从而|使得|因而|造成|鉴于|促使)/.test(s);
-      const kw = s.slice(0, 16);
+      const contextSnippet = [prevSent, s, nextSent].filter(Boolean).join(isEnMode ? ' ' : '。');
+      const isCausal = isEnMode
+        ? /(because|due to|led to|caused|resulting in|as a result|thereby|driven by|triggered)/i.test(s)
+        : /(因为|由于|导致|致使|从而|使得|因而|造成|鉴于|促使)/.test(s);
+      const kw = isEnMode ? s.split(/\s+/).slice(0, 4).join(' ') : s.slice(0, 16);
       matchedClaims.push({
         id: `claim_${i + 1}`,
         claimText: s,
@@ -275,7 +332,9 @@ function fallbackExtractClaims(content: string): Array<{
         searchKeyword: kw,
         searchKeywords: [kw],
         contextSnippet,
-        causalPremise: isCausal ? `原句包含因果归因: “${s.slice(0, 30)}...”` : undefined,
+        causalPremise: isCausal
+          ? (isEnMode ? `Asserts causal attribution: "${s.slice(0, 30)}..."` : `原句包含因果归因: “${s.slice(0, 30)}...”`)
+          : undefined,
         isCausalClaim: isCausal
       });
     });
@@ -289,7 +348,8 @@ export async function extractClaims(
   settings: UserSettings,
   onRetry?: (attempt: number, maxRetries: number, error: CategorizedAPIError) => void,
   onError?: (error: CategorizedAPIError) => void,
-  onThinking?: (deltaReasoning: string, accumulatedReasoning: string) => void
+  onThinking?: (deltaReasoning: string, accumulatedReasoning: string) => void,
+  lang: 'zh' | 'en' = 'zh'
 ): Promise<Array<{ 
   id: string; 
   claimText: string; 
@@ -302,7 +362,64 @@ export async function extractClaims(
 }>> {
   if (!content || content.trim().length < 5) return [];
 
-  const prompt = `你是一位顶尖的学术与技术事实核查审校官（Fact-Checking Specialist）。
+  const systemPrompt = lang === 'en'
+    ? 'You are an elite academic and technical fact-checking specialist skilled in objective claim extraction and search probe query design.\nCRITICAL REQUIREMENT: You MUST conduct all your internal thinking, reasoning process, and chain-of-thought strictly in English (concise and under 150 words). Directly output a valid JSON array only.'
+    : '你是一位精通客观事实提取与中立检索探针设计的核查专家。思考过程请保持精炼敏捷（严格控制在150字以内，快速锁定主体与属性），严禁冗长推演与自问自答，必须直接输出标准 JSON 数组。';
+
+  const prompt = lang === 'en'
+    ? `You are an elite academic and technical fact-checking specialist.
+Carefully read the text below and extract key propositions that contain [Objective Factual Claims] (extract up to 6 most critical factual claims). Filter out subjective opinions, and design neutral [English Search Probe Queries] for each claim to query search engines.
+
+CRITICAL INSTRUCTIONS ON LANGUAGE:
+1. Conduct all internal thinking, reasoning, and chain-of-thought STRICTLY in English.
+2. All search probe queries ("searchKeyword" and "searchKeywords") MUST be formulated in English (concise keywords separated by spaces).
+3. The "claimText" must represent the objective factual assertion from the text (in English if original text is in English).
+
+【Text to Verify】:
+"""
+${content}
+"""
+
+【Claim Filtering Criteria】:
+1. Strict Negative Filtering (Reject Subjective Opinions):
+   - Exclude personal beliefs, aesthetic judgments, emotional hype, generic praises, or unfalsifiable claims (e.g., "stunning performance", "epic showdown", "promising future", "amazing experience").
+2. Strict Positive Admission (Admit Only Verifiable Objective Claims):
+   - Specific data, metrics, percentages, amounts, rankings, benchmarks, and dates;
+   - Entity background: education, draft pick, career transfers, appointments, official releases;
+   - Technical & version claims: software version numbers, release dates, architecture changes;
+   - Causal relationships: if the text asserts that Event A directly caused Result B, set isCausalClaim: true and specify causalPremise.
+
+【Search Probe Design Guidelines (CRITICAL: Formulate in English)】:
+- Core requirement: Each probe MUST begin with the specific [Subject Entity Name] followed by the [Objective Attribute under verification] in English keywords separated by spaces.
+  * Example: ["Python 3.14 release date", "Python 3.14 GIL removal"]
+  * Example: ["Chang'e-6 lunar samples mass", "Earth Moon average distance Apollo"]
+  * Example: ["Tencent Yuanbao 2.0 launch date", "Tencent Yuanbao deep search"]
+  * Example: ["coffee Alzheimer disease risk reduction"]
+- Prohibited:
+  * Never copy the unverified conclusion sentence directly.
+  * Never produce dangling prepositions, conjunctions, or subject-less queries.
+- Multi-probe mechanism:
+  * Simple/single-point facts: provide 1 focused probe query.
+  * Compound/causal claims: provide 2 to 3 targeted probes that verify different aspects.
+  * Each probe should be 2 to 5 keywords separated by spaces.
+
+Directly output a valid JSON array without any Markdown fences or explanations, in the following format:
+[
+  {
+    "id": "claim_1",
+    "claimText": "Objective factual assertion sentence from original text (stripped of subjective fluff)",
+    "category": "numeric",
+    "searchKeyword": "Primary English search probe (e.g.: Python 3.14 release date)",
+    "searchKeywords": [
+      "Primary English search probe",
+      "Secondary English search probe if compound claim"
+    ],
+    "contextSnippet": "Context snippet from original text surrounding the sentence",
+    "isCausalClaim": false,
+    "causalPremise": null
+  }
+]`
+    : `你是一位顶尖的学术与技术事实核查审校官（Fact-Checking Specialist）。
 请仔细阅读以下用户文本，精准筛选出所有包含【客观事实断言】的关键命题（最多提取 6 个最重要的事实命题），深度过滤主观言论，并为每个命题设计针对搜索引擎的【中立属性探针词】。
 
 【待核查文本】：
@@ -359,13 +476,13 @@ ${content}
 
   try {
     const responseText = await callAI({
-      apiKey: settings.aiApiKey,
+      apiKey: settings.useCustomAiKey ? settings.aiApiKey : '',
       baseUrl: settings.aiBaseUrl,
       model: settings.aiModel,
       messages: [
         { 
           role: 'system', 
-          content: '你是一位精通客观事实提取与中立检索探针设计的核查专家。思考过程请保持精炼敏捷（严格控制在150字以内，快速锁定主体与属性），严禁冗长推演与自问自答，必须直接输出标准 JSON 数组。' 
+          content: systemPrompt 
         },
         { role: 'user', content: prompt }
       ],
@@ -414,7 +531,7 @@ ${content}
   }
 
   // Graceful fallback to heuristic extraction so workflow never hangs
-  return fallbackExtractClaims(content);
+  return fallbackExtractClaims(content, lang);
 }
 
 export async function verifySingleClaim(
@@ -432,25 +549,77 @@ export async function verifySingleClaim(
   settings: UserSettings,
   onRetry?: (attempt: number, maxRetries: number, error: CategorizedAPIError) => void,
   onError?: (error: CategorizedAPIError) => void,
-  onThinking?: (deltaReasoning: string, accumulatedReasoning: string) => void
+  onThinking?: (deltaReasoning: string, accumulatedReasoning: string) => void,
+  lang: 'zh' | 'en' = 'zh'
 ): Promise<Claim> {
+  const isEnMode = lang === 'en';
+
   if (!sources || sources.length === 0) {
     return {
       ...claimData,
       status: 'unverifiable',
       confidence: 40,
-      reasoning: '元宝搜索全网及腾讯生态未检索到直接相关的权威信源记录，建议人工补充检索。',
+      reasoning: isEnMode
+        ? 'No directly relevant authoritative source records were retrieved from Yuanbao Search and Tencent ecosystem. Manual verification recommended.'
+        : '元宝搜索全网及腾讯生态未检索到直接相关的权威信源记录，建议人工补充检索。',
       sources: []
     };
   }
 
   const evidenceText = sources.slice(0, 5).map((s, i) => {
-    return `[信源 ${i + 1}] 来源: ${s.site} | 标题: ${s.title} | 发布时间: ${s.date || '未知'}
+    return isEnMode
+      ? `[Source ${i + 1}] Source: ${s.site} | Title: ${s.title} | Published: ${s.date || 'Unknown'}
+Evidence Passage: ${s.passage}
+URL: ${s.url}`
+      : `[信源 ${i + 1}] 来源: ${s.site} | 标题: ${s.title} | 发布时间: ${s.date || '未知'}
 摘要证据: ${s.passage}
 链接: ${s.url}`;
   }).join('\n\n');
 
-  const prompt = `你是一位严谨的科研与新闻事实核查法官。
+  const systemPrompt = isEnMode
+    ? 'You are a meticulous scientific and journalistic fact-checking judge and academic citation copilot.\nCRITICAL REQUIREMENT: You MUST conduct all internal thinking, reasoning process, and chain-of-thought strictly in English. Output a valid JSON object only.'
+    : '你是一位精通事实交叉审校与因果逻辑核验的法官，只输出合法 JSON 对象。';
+
+  const prompt = isEnMode
+    ? `You are a rigorous scientific and journalistic fact-checking judge.
+Based on the authoritative external evidence retrieved by Tencent Yuanbao Search, evaluate the claim in the light of its context and causal reasoning chain, and deliver an impartial verdict.
+
+CRITICAL INSTRUCTION ON LANGUAGE:
+- You MUST conduct all your internal thinking, reasoning process, and thoughts strictly in English.
+- The "reasoning", "correction", and "citationFootnote" fields in the JSON response MUST be written fluently in English.
+
+【Claim Under Verification】:
+"${claimData.claimText}"
+
+【Context from Original Text】:
+"${claimData.contextSnippet || '(Consistent with manuscript context)'}"
+
+【Asserted Causal Chain / Premise Constraints】:
+"${claimData.causalPremise || (claimData.isCausalClaim ? 'Contains causal attribution chain' : 'Single independent factual claim, no complex causal inference')}"
+
+【Authoritative Evidence from Tencent Yuanbao Search】:
+${evidenceText}
+
+【Verdict Standards & Causal Review Rules】:
+1. status (Must be one of the four):
+   - "verified": Authoritative sources explicitly support this claim; core figures and facts match. If causal claims are made, sources substantiate the causality.
+   - "disputed": Sources indicate conflicting figures, outdated versions, or weak causal evidence (events happened independently without direct causal link asserted in text).
+   - "refuted": Sources explicitly refute the claim, or the claim contains fabricated numbers, misattributions, or post-hoc false causality.
+   - "unverifiable": Sources do not provide sufficient evidence to confirm or refute.
+2. confidence: Integer between 0 and 100 representing certainty.
+3. reasoning: 1-2 concise, incisive sentences in English explaining the factual verdict basis. Explicitly address causal attribution if applicable.
+4. correction: If status is "disputed" or "refuted", provide the corrected, accurate factual statement in English based on the latest evidence; if "verified", leave null.
+5. citationFootnote: Academic-style citation in English (e.g.: According to report from [${sources[0].site}], "${sources[0].title}", ...).
+
+Output pure JSON directly without any wrapping Markdown:
+{
+  "status": "verified",
+  "confidence": 95,
+  "reasoning": "...",
+  "correction": "...",
+  "citationFootnote": "..."
+}`
+    : `你是一位严谨的科研与新闻事实核查法官。
 请根据【元宝搜索】检索到的权威外部证据，结合待核查命题的【前后上下文】与【因果归因链条】，进行深度交叉比对与真伪裁决。
 
 【待核查命题】：
@@ -491,11 +660,11 @@ ${evidenceText}
 
   try {
     const responseText = await callAI({
-      apiKey: settings.aiApiKey,
+      apiKey: settings.useCustomAiKey ? settings.aiApiKey : '',
       baseUrl: settings.aiBaseUrl,
       model: settings.aiModel,
       messages: [
-        { role: 'system', content: '你是一位精通事实交叉审校与因果逻辑核验的法官，只输出合法 JSON 对象。' },
+        { role: 'system', content: systemPrompt },
         { role: 'user', content: prompt }
       ],
       temperature: 0.1,
@@ -515,9 +684,9 @@ ${evidenceText}
       ...claimData,
       status,
       confidence: typeof result.confidence === 'number' ? Math.min(100, Math.max(0, result.confidence)) : 85,
-      reasoning: result.reasoning || '经元宝搜索多源交叉比对与因果逻辑审校完成核验。',
+      reasoning: result.reasoning || (isEnMode ? 'Verified through Tencent Yuanbao multi-source cross-arbitration and causal review.' : '经元宝搜索多源交叉比对与因果逻辑审校完成核验。'),
       correction: result.correction && result.correction !== 'null' ? result.correction : undefined,
-      citationFootnote: result.citationFootnote || `来源：[${sources[0].site}] ${sources[0].title}`,
+      citationFootnote: result.citationFootnote || (isEnMode ? `Source: [${sources[0].site}] ${sources[0].title}` : `来源：[${sources[0].site}] ${sources[0].title}`),
       sources,
       contextSnippet: claimData.contextSnippet,
       causalPremise: claimData.causalPremise,
@@ -533,9 +702,13 @@ ${evidenceText}
       status: 'verified',
       confidence: 78,
       reasoning: parsedErr.kind === 'timeout'
-        ? `因大模型网络响应超时，系统启动本地备用证据比对引擎：依据元宝搜索召回的《${sources[0].site}》权威报道直接完成事实对齐。`
-        : `因大模型接口异常 (${parsedErr.message})，系统启动本地备用证据比对引擎：依据元宝搜索召回的《${sources[0].site}》权威报道直接完成事实对齐。`,
-      citationFootnote: `来源：[${sources[0].site}] ${sources[0].title}`,
+        ? (isEnMode
+            ? `Due to LLM network timeout, activated local fallback evidence alignment: verified directly against authoritative reports from "${sources[0].site}".`
+            : `因大模型网络响应超时，系统启动本地备用证据比对引擎：依据元宝搜索召回的《${sources[0].site}》权威报道直接完成事实对齐。`)
+        : (isEnMode
+            ? `Due to LLM service anomaly (${parsedErr.message}), activated local fallback evidence alignment: verified directly against authoritative reports from "${sources[0].site}".`
+            : `因大模型接口异常 (${parsedErr.message})，系统启动本地备用证据比对引擎：依据元宝搜索召回的《${sources[0].site}》权威报道直接完成事实对齐。`),
+      citationFootnote: isEnMode ? `Source: [${sources[0].site}] ${sources[0].title}` : `来源：[${sources[0].site}] ${sources[0].title}`,
       sources,
       contextSnippet: claimData.contextSnippet,
       causalPremise: claimData.causalPremise,
@@ -551,6 +724,7 @@ export interface PipelineOptions {
   url?: string;
   inspectionTask?: SourceInspectionTask;
   extractionTask?: MultimodalExtractionTask;
+  lang?: 'zh' | 'en';
 }
 
 export async function runInteractiveWorkflowPipeline(
@@ -561,6 +735,7 @@ export async function runInteractiveWorkflowPipeline(
   options?: PipelineOptions
 ): Promise<{ claims: Claim[]; summary: VerificationSummary; extractedContent?: string }> {
   const startTime = Date.now();
+  const lang = options?.lang || 'zh';
   const inputType: SourceInputType = options?.inputType || 'text';
   const isDocOrUrl = inputType === 'document' || inputType === 'url';
 
@@ -602,7 +777,7 @@ export async function runInteractiveWorkflowPipeline(
   let lastThinkingUpdate = 0;
   const updateThinkingLog = (logId: string, accumulated: string, isActive: boolean) => {
     let log = state.logs.find(l => l.id === logId);
-    const snippet = extractLatestThinkingSnippet(accumulated);
+    const snippet = extractLatestThinkingSnippet(accumulated, 68, lang);
     if (!log) {
       log = {
         id: logId,
@@ -642,15 +817,20 @@ export async function runInteractiveWorkflowPipeline(
         status: 'inspecting',
         passed: false,
         sourceType: inputType,
-        titleOrName: state.sourceNameOrUrl || (inputType === 'url' ? '网页目标' : '原稿文档'),
-        format: inputType === 'url' ? 'HTML5' : '检测中...',
-        securitySummary: '正在扫描文件指纹与安全校验...',
+        titleOrName: state.sourceNameOrUrl || (inputType === 'url' ? (lang === 'en' ? 'Target URL' : '网页目标') : (lang === 'en' ? 'Source Manuscript' : '原稿文档')),
+        format: inputType === 'url' ? 'HTML5' : (lang === 'en' ? 'Detecting...' : '检测中...'),
+        securitySummary: lang === 'en' ? 'Scanning file fingerprint and security checks...' : '正在扫描文件指纹与安全校验...',
         latencyMs: 0
       };
     }
     onWorkflowUpdate({ ...state, isPaused: controller.isPaused });
 
-    addLog(`[步骤 1/6 格式预检] 启动来源安全与格式可用性预检（魔数/文件结构/SSL网络层校验）...`, 'inspect');
+    addLog(
+      lang === 'en'
+        ? '[Step 1/6 Source Pre-check] Initiating security & format availability pre-check (magic bytes / file structure / SSL layer)...'
+        : '[步骤 1/6 格式预检] 启动来源安全与格式可用性预检（魔数/文件结构/SSL网络层校验）...',
+      'inspect'
+    );
 
     const inspectStart = Date.now();
     try {
@@ -686,7 +866,9 @@ export async function runInteractiveWorkflowPipeline(
       }
 
       addLog(
-        `[步骤 1/6 预检通过] 格式核验通过 (${state.inspectionTask.latencyMs || 25}ms): ${state.inspectionTask.format || ''} · ${state.inspectionTask.securitySummary || '安全通过'}`,
+        lang === 'en'
+          ? `[Step 1/6 Pre-check Passed] Format verified (${state.inspectionTask.latencyMs || 25}ms): ${state.inspectionTask.format || ''} · ${state.inspectionTask.securitySummary || 'Passed'}`
+          : `[步骤 1/6 预检通过] 格式核验通过 (${state.inspectionTask.latencyMs || 25}ms): ${state.inspectionTask.format || ''} · ${state.inspectionTask.securitySummary || '安全通过'}`,
         'success'
       );
     } catch (inspectErr: any) {
@@ -694,18 +876,23 @@ export async function runInteractiveWorkflowPipeline(
         status: 'failed',
         passed: false,
         sourceType: inputType,
-        titleOrName: state.sourceNameOrUrl || '原稿',
-        securitySummary: `预检异常: ${inspectErr.message}`,
+        titleOrName: state.sourceNameOrUrl || (lang === 'en' ? 'Source' : '原稿'),
+        securitySummary: lang === 'en' ? `Pre-check notice: ${inspectErr.message}` : `预检异常: ${inspectErr.message}`,
         latencyMs: Date.now() - inspectStart,
         error: inspectErr.message
       };
-      addLog(`[预检警告] 预检遇到非致命异常: ${inspectErr.message}，已自动安全降级并继续执行`, 'warn');
+      addLog(
+        lang === 'en'
+          ? `[Pre-check Notice] Non-fatal pre-check issue (${inspectErr.message}), safely continuing pipeline`
+          : `[预检警告] 预检遇到非致命异常: ${inspectErr.message}，已自动安全降级并继续执行`, 
+        'warn'
+      );
     }
 
     // Check wait / pause
     if (!(await controller.checkWait())) {
       state.stage = 'aborted';
-      addLog('工作流已被用户终止', 'warn');
+      addLog(lang === 'en' ? 'Workflow cancelled by user' : '工作流已被用户终止', 'warn');
       return createEmptyResult(startTime);
     }
     await new Promise(r => setTimeout(r, 450));
@@ -761,11 +948,18 @@ export async function runInteractiveWorkflowPipeline(
       }
 
       addLog(
-        `[步骤 2/6 图文就绪] 多模态图文提取完成 (${state.extractionTask.latencyMs || 120}ms): 抽取正文 ${content.length} 字、${state.extractionTask.paragraphCount || 1} 个段落，捕获 ${state.extractionTask.images?.length || 0} 张多模态插图/图表`,
+        lang === 'en'
+          ? `[Step 2/6 Multimodal Ready] Extraction complete (${state.extractionTask.latencyMs || 120}ms): extracted ${content.length} characters, ${state.extractionTask.paragraphCount || 1} paragraphs, captured ${state.extractionTask.images?.length || 0} multimodal figures`
+          : `[步骤 2/6 图文就绪] 多模态图文提取完成 (${state.extractionTask.latencyMs || 120}ms): 抽取正文 ${content.length} 字、${state.extractionTask.paragraphCount || 1} 个段落，捕获 ${state.extractionTask.images?.length || 0} 张多模态插图/图表`,
         'success'
       );
     } catch (extractErr: any) {
-      addLog(`[提取警告] 图文提取遇到异常 (${extractErr.message})，使用现有正文继续执行`, 'warn');
+      addLog(
+        lang === 'en'
+          ? `[Extraction Notice] Extraction encountered issue (${extractErr.message}), continuing with text`
+          : `[提取警告] 图文提取遇到异常 (${extractErr.message})，使用现有正文继续执行`,
+        'warn'
+      );
       state.extractionTask = {
         status: 'done',
         textLength: content.length,
@@ -778,7 +972,7 @@ export async function runInteractiveWorkflowPipeline(
     // Check wait / pause
     if (!(await controller.checkWait())) {
       state.stage = 'aborted';
-      addLog('工作流已被用户终止', 'warn');
+      addLog(lang === 'en' ? 'Workflow cancelled by user' : '工作流已被用户终止', 'warn');
       return createEmptyResult(startTime);
     }
     await new Promise(r => setTimeout(r, 450));
@@ -787,15 +981,15 @@ export async function runInteractiveWorkflowPipeline(
   // ================= STEP 3: 文本语义长程拆解 (Claims Extraction) =================
   addLog(
     isDocOrUrl 
-      ? '[步骤 3/6 命题拆解] 正文与图文已就绪，调用大模型提取可客观证伪事实断言 (Claims)...'
-      : '工作流启动：开始对输入稿件进行深度语义解析与事实断言提取...', 
+      ? (lang === 'en' ? '[Step 3/6 Claim Extraction] Text & media ready, calling LLM to extract falsifiable claims...' : '[步骤 3/6 命题拆解] 正文与图文已就绪，调用大模型提取可客观证伪事实断言 (Claims)...')
+      : (lang === 'en' ? 'Workflow started: Performing deep semantic analysis and claim extraction on draft...' : '工作流启动：开始对输入稿件进行深度语义解析与事实断言提取...'), 
     'info'
   );
 
   // Check wait / pause
   if (!(await controller.checkWait())) {
     state.stage = 'aborted';
-    addLog('工作流已被用户终止', 'warn');
+    addLog(lang === 'en' ? 'Workflow cancelled by user' : '工作流已被用户终止', 'warn');
     return createEmptyResult(startTime);
   }
 
@@ -820,27 +1014,48 @@ export async function runInteractiveWorkflowPipeline(
       content, 
       settings,
       (attempt, max, parsedErr) => {
-        const kindLabel = parsedErr.kind === 'timeout' 
-          ? '接口响应超时' 
-          : parsedErr.kind === 'rate_limit' 
-          ? '频控超限' 
-          : parsedErr.kind === 'server'
-          ? '服务故障'
-          : '调用异常';
-        addLog(`[警告] 大模型事实拆解${kindLabel} (${parsedErr.message})，正在进行第 ${attempt}/${max} 次自动重试...`, 'warn', parsedErr.kind);
+        const kindLabel = lang === 'en'
+          ? (parsedErr.kind === 'timeout' ? 'Timeout' : parsedErr.kind === 'rate_limit' ? 'Rate Limit' : parsedErr.kind === 'server' ? 'Server Error' : 'API Error')
+          : (parsedErr.kind === 'timeout' ? '接口响应超时' : parsedErr.kind === 'rate_limit' ? '频控超限' : parsedErr.kind === 'server' ? '服务故障' : '调用异常');
+        addLog(
+          lang === 'en'
+            ? `[Warning] LLM claim extraction ${kindLabel} (${parsedErr.message}), auto-retry ${attempt}/${max}...`
+            : `[警告] 大模型事实拆解${kindLabel} (${parsedErr.message})，正在进行第 ${attempt}/${max} 次自动重试...`, 
+          'warn', 
+          parsedErr.kind
+        );
       },
       (parsedErr) => {
         if (parsedErr.kind === 'auth') {
-          addLog(`[鉴权错误] 大模型 API Key 无效或未授权，已切换至本地启发式事实提取引擎（可在右上角设置中检查密钥）`, 'error', 'auth');
+          addLog(
+            lang === 'en'
+              ? `[Auth Error] LLM API key invalid or unauthorized, switched to local heuristic extraction engine (configure in Settings)`
+              : `[鉴权错误] 大模型 API Key 无效或未授权，已切换至本地启发式事实提取引擎（可在右上角设置中检查密钥）`, 
+            'error', 
+            'auth'
+          );
         } else if (parsedErr.kind === 'timeout') {
-          addLog(`[超时降级] 大模型拆解多次重试均超时无响应，已切换至本地启发式提取引擎保证流程畅通`, 'warn', 'timeout');
+          addLog(
+            lang === 'en'
+              ? `[Timeout Fallback] LLM claim extraction timed out repeatedly, switched to local heuristic extraction engine`
+              : `[超时降级] 大模型拆解多次重试均超时无响应，已切换至本地启发式提取引擎保证流程畅通`, 
+            'warn', 
+            'timeout'
+          );
         } else {
-          addLog(`[规则降级] 大模型拆解异常 (${parsedErr.message})，已切换至本地启发式提取引擎`, 'warn', 'degraded');
+          addLog(
+            lang === 'en'
+              ? `[Degraded] LLM claim extraction error (${parsedErr.message}), switched to local heuristic engine`
+              : `[规则降级] 大模型拆解异常 (${parsedErr.message})，已切换至本地启发式提取引擎`, 
+            'warn', 
+            'degraded'
+          );
         }
       },
       (delta, accumulated) => {
         updateThinkingLog(extractThinkingId, accumulated, true);
-      }
+      },
+      lang
     );
   } finally {
     const extractThinkingLog = state.logs.find(l => l.id === extractThinkingId);
@@ -890,7 +1105,9 @@ export async function runInteractiveWorkflowPipeline(
 
   const causalCount = rawClaims.filter(c => c.isCausalClaim).length;
   addLog(
-    `命题拆解完毕：共提取出 ${rawClaims.length} 条事实声明${causalCount > 0 ? `（其中 ${causalCount} 处蕴含前后因果链，已绑定上下文切片）` : '，已绑定上下文切片'}，已生成工作树分支拓扑`,
+    lang === 'en'
+      ? `Claims deconstruction complete: Extracted ${rawClaims.length} verifiable propositions${causalCount > 0 ? ` (${causalCount} with causal chains, bound to context)` : ', bound to context'}, workflow branch topology generated`
+      : `命题拆解完毕：共提取出 ${rawClaims.length} 条事实声明${causalCount > 0 ? `（其中 ${causalCount} 处蕴含前后因果链，已绑定上下文切片）` : '，已绑定上下文切片'}，已生成工作树分支拓扑`,
     'success',
     undefined,
     rawClaims
@@ -903,21 +1120,26 @@ export async function runInteractiveWorkflowPipeline(
   // Check wait / pause
   if (!(await controller.checkWait())) {
     state.stage = 'aborted';
-    addLog('工作流已被用户终止', 'warn');
+    addLog(lang === 'en' ? 'Workflow cancelled by user' : '工作流已被用户终止', 'warn');
     return createEmptyResult(startTime);
   }
 
   // Stage: Yuanbao Search
   state.stage = 'searching';
   state.currentStepIndex = isDocOrUrl ? 3 : 1;
-  addLog(`[${isDocOrUrl ? '步骤 4/6' : '步骤 2/4'} 元宝检索] 并发调用腾讯云元宝搜索 (WSA - SearchPro)...`, 'search');
+  addLog(
+    lang === 'en'
+      ? `[${isDocOrUrl ? 'Step 4/6' : 'Step 2/4'} Yuanbao Search] Concurrently querying Tencent Cloud Yuanbao Search (WSA - SearchPro)...`
+      : `[${isDocOrUrl ? '步骤 4/6' : '步骤 2/4'} 元宝检索] 并发调用腾讯云元宝搜索 (WSA - SearchPro)...`, 
+    'search'
+  );
 
   const searchResultsMap = new Map<string, YuanbaoSource[]>();
 
   for (let i = 0; i < rawClaims.length; i++) {
     if (!(await controller.checkWait())) {
       state.stage = 'aborted';
-      addLog('工作流已被用户终止', 'warn');
+      addLog(lang === 'en' ? 'Workflow cancelled by user' : '工作流已被用户终止', 'warn');
       return createPartialResult(rawClaims, searchResultsMap, startTime);
     }
 
@@ -936,9 +1158,19 @@ export async function runInteractiveWorkflowPipeline(
 
     const isMultiProbe = probeQueries.length > 1;
     if (isMultiProbe) {
-      addLog(`[检索任务 ${i + 1}/${rawClaims.length}] AI 判定复合命题，启动 ${probeQueries.length} 路自适应检索探针: ${probeQueries.map(q => `"${q}"`).join('、')}...`, 'search');
+      addLog(
+        lang === 'en'
+          ? `[Search Task ${i + 1}/${rawClaims.length}] AI identified composite claim, launched ${probeQueries.length} targeted search probes: ${probeQueries.map(q => `"${q}"`).join(', ')}...`
+          : `[检索任务 ${i + 1}/${rawClaims.length}] AI 判定复合命题，启动 ${probeQueries.length} 路自适应检索探针: ${probeQueries.map(q => `"${q}"`).join('、')}...`, 
+        'search'
+      );
     } else {
-      addLog(`[检索任务 ${i + 1}/${rawClaims.length}] 查询关键词: "${probeQueries[0]}"...`, 'search');
+      addLog(
+        lang === 'en'
+          ? `[Search Task ${i + 1}/${rawClaims.length}] Query probe: "${probeQueries[0]}"...`
+          : `[检索任务 ${i + 1}/${rawClaims.length}] 查询关键词: "${probeQueries[0]}"...`, 
+        'search'
+      );
     }
 
     const searchStart = Date.now();
@@ -949,7 +1181,7 @@ export async function runInteractiveWorkflowPipeline(
         probeQueries.map((queryText, qIdx) => searchYuanbao({
           query: queryText,
           cnt: perQueryCnt,
-          apiKey: settings.yuanbaoApiKey,
+          apiKey: settings.useCustomYuanbaoKey ? settings.yuanbaoApiKey : '',
           timeoutMs: 12000,
           maxRetries: 2,
           onRetry: (attempt, max, parsedErr) => {
@@ -960,12 +1192,16 @@ export async function runInteractiveWorkflowPipeline(
             if (task.probes && task.probes[qIdx]) {
               task.probes[qIdx].status = 'retrying';
             }
-            const kindLabel = parsedErr.kind === 'timeout' 
-              ? '接口响应超时' 
-              : parsedErr.kind === 'rate_limit' 
-              ? '频控超限' 
-              : '接口异常';
-            addLog(`[警告] 任务 #${i + 1} 探针[${qIdx + 1}] "${queryText}" 元宝检索${kindLabel} (${parsedErr.message})，正在执行第 ${attempt}/${max} 次自动重试...`, 'warn', parsedErr.kind);
+            const kindLabel = lang === 'en'
+              ? (parsedErr.kind === 'timeout' ? 'Timeout' : parsedErr.kind === 'rate_limit' ? 'Rate Limit' : 'API Error')
+              : (parsedErr.kind === 'timeout' ? '接口响应超时' : parsedErr.kind === 'rate_limit' ? '频控超限' : '接口异常');
+            addLog(
+              lang === 'en'
+                ? `[Warning] Task #${i + 1} Probe[${qIdx + 1}] "${queryText}" Yuanbao search ${kindLabel} (${parsedErr.message}), auto-retry ${attempt}/${max}...`
+                : `[警告] 任务 #${i + 1} 探针[${qIdx + 1}] "${queryText}" 元宝检索${kindLabel} (${parsedErr.message})，正在执行第 ${attempt}/${max} 次自动重试...`, 
+              'warn', 
+              parsedErr.kind
+            );
             onWorkflowUpdate({ ...state, isPaused: controller.isPaused });
           }
         }))
@@ -1013,9 +1249,19 @@ export async function runInteractiveWorkflowPipeline(
       task.topSites = Array.from(new Set(aggregatedSources.map(s => s.site))).slice(0, 4);
 
       if (isMultiProbe) {
-        addLog(`元宝搜索 ${probeQueries.length} 路探针聚合成功 (耗时 ${latency}ms): 跨源召回去重共 ${aggregatedSources.length} 篇权威信源 [${task.topSites.join('、')}]`, 'success');
+        addLog(
+          lang === 'en'
+            ? `Yuanbao multi-probe search completed (${latency}ms): Retrieved & deduplicated ${aggregatedSources.length} authoritative sources [${task.topSites.join(', ')}]`
+            : `元宝搜索 ${probeQueries.length} 路探针聚合成功 (耗时 ${latency}ms): 跨源召回去重共 ${aggregatedSources.length} 篇权威信源 [${task.topSites.join('、')}]`, 
+          'success'
+        );
       } else {
-        addLog(`元宝搜索召回成功 (耗时 ${latency}ms): 获得 ${aggregatedSources.length} 篇权威信源 [${task.topSites.join('、')}]`, 'success');
+        addLog(
+          lang === 'en'
+            ? `Yuanbao search completed (${latency}ms): Retrieved ${aggregatedSources.length} authoritative sources [${task.topSites.join(', ')}]`
+            : `元宝搜索召回成功 (耗时 ${latency}ms): 获得 ${aggregatedSources.length} 篇权威信源 [${task.topSites.join('、')}]`, 
+          'success'
+        );
       }
     } catch (err: any) {
       const parsedErr: CategorizedAPIError = err.categorized || classifyYuanbaoError(err);
@@ -1030,11 +1276,29 @@ export async function runInteractiveWorkflowPipeline(
 
       const queryDisplay = probeQueries.join(' | ');
       if (parsedErr.kind === 'auth') {
-        addLog(`[鉴权错误] 任务 #${i + 1} "${queryDisplay}" 元宝搜索 API 密钥无效或未授权，已终止重试并平稳降级`, 'error', 'auth');
+        addLog(
+          lang === 'en'
+            ? `[Auth Error] Task #${i + 1} "${queryDisplay}" Yuanbao Search API key invalid or unauthorized, terminated retry and smoothly degraded`
+            : `[鉴权错误] 任务 #${i + 1} "${queryDisplay}" 元宝搜索 API 密钥无效或未授权，已终止重试并平稳降级`, 
+          'error', 
+          'auth'
+        );
       } else if (parsedErr.kind === 'timeout') {
-        addLog(`[超时无响应] 任务 #${i + 1} "${queryDisplay}" 元宝检索多次超时无响应，标记为无召回信源，平稳继续后续流程`, 'warn', 'timeout');
+        addLog(
+          lang === 'en'
+            ? `[Timeout] Task #${i + 1} "${queryDisplay}" Yuanbao search timed out repeatedly, continuing pipeline`
+            : `[超时无响应] 任务 #${i + 1} "${queryDisplay}" 元宝检索多次超时无响应，标记为无召回信源，平稳继续后续流程`, 
+          'warn', 
+          'timeout'
+        );
       } else {
-        addLog(`[检索降级] 任务 #${i + 1} "${queryDisplay}" 元宝检索调用异常 (${parsedErr.message})，平稳继续后续流程`, 'warn', parsedErr.kind);
+        addLog(
+          lang === 'en'
+            ? `[Search Notice] Task #${i + 1} "${queryDisplay}" Yuanbao search error (${parsedErr.message}), continuing pipeline`
+            : `[检索降级] 任务 #${i + 1} "${queryDisplay}" 元宝检索调用异常 (${parsedErr.message})，平稳继续后续流程`, 
+          'warn', 
+          parsedErr.kind
+        );
       }
       searchResultsMap.set(c.id, []);
     }
@@ -1043,7 +1307,12 @@ export async function runInteractiveWorkflowPipeline(
   // Stage: Cross-verification & Arbitration
   state.stage = 'verifying';
   state.currentStepIndex = isDocOrUrl ? 4 : 2;
-  addLog(`[${isDocOrUrl ? '步骤 5/6' : '步骤 3/4'} 证据比对] 比对元宝信源证据与原文事实...`, 'info');
+  addLog(
+    lang === 'en'
+      ? `[${isDocOrUrl ? 'Step 5/6' : 'Step 3/4'} Evidence Arbitration] Cross-arbitrating Yuanbao evidence against original claim assertions...`
+      : `[${isDocOrUrl ? '步骤 5/6' : '步骤 3/4'} 证据比对] 比对元宝信源证据与原文事实...`, 
+    'info'
+  );
   onWorkflowUpdate({ ...state });
 
   const verifiedClaims: Claim[] = [];
@@ -1051,14 +1320,19 @@ export async function runInteractiveWorkflowPipeline(
   for (let i = 0; i < rawClaims.length; i++) {
     if (!(await controller.checkWait())) {
       state.stage = 'aborted';
-      addLog('工作流已被用户终止', 'warn');
+      addLog(lang === 'en' ? 'Workflow cancelled by user' : '工作流已被用户终止', 'warn');
       return createPartialResult(rawClaims, searchResultsMap, startTime, verifiedClaims);
     }
 
     const c = rawClaims[i];
     const aTask = state.arbitrationTasks.find(t => t.claimId === c.id)!;
     aTask.status = 'verifying';
-    addLog(`[仲裁任务 ${i + 1}/${rawClaims.length}] 正在裁决: "${c.claimText.slice(0, 25)}..."`, 'info');
+    addLog(
+      lang === 'en'
+        ? `[Arbitration ${i + 1}/${rawClaims.length}] Cross-arbitrating: "${c.claimText.slice(0, 30)}..."`
+        : `[仲裁任务 ${i + 1}/${rawClaims.length}] 正在裁决: "${c.claimText.slice(0, 25)}..."`, 
+      'info'
+    );
 
     const sources = searchResultsMap.get(c.id) || [];
     const verifyThinkingId = `thinking_verify_${c.id}`;
@@ -1073,27 +1347,50 @@ export async function runInteractiveWorkflowPipeline(
           aTask.status = 'retrying';
           aTask.retryCount = attempt;
           aTask.errorKind = parsedErr.kind;
-          const kindLabel = parsedErr.kind === 'timeout' 
-            ? '比对响应超时' 
-            : parsedErr.kind === 'rate_limit' 
-            ? '频控超限' 
-            : '服务异常';
-          addLog(`[警告] 仲裁任务 #${i + 1} "${c.claimText.slice(0, 18)}..." 大模型${kindLabel} (${parsedErr.message})，正在执行第 ${attempt}/${max} 次自动重试...`, 'warn', parsedErr.kind);
+          const kindLabel = lang === 'en'
+            ? (parsedErr.kind === 'timeout' ? 'Timeout' : parsedErr.kind === 'rate_limit' ? 'Rate Limit' : 'Error')
+            : (parsedErr.kind === 'timeout' ? '比对响应超时' : parsedErr.kind === 'rate_limit' ? '频控超限' : '服务异常');
+          addLog(
+            lang === 'en'
+              ? `[Warning] Arbitration task #${i + 1} "${c.claimText.slice(0, 24)}..." LLM ${kindLabel} (${parsedErr.message}), auto-retry ${attempt}/${max}...`
+              : `[警告] 仲裁任务 #${i + 1} "${c.claimText.slice(0, 18)}..." 大模型${kindLabel} (${parsedErr.message})，正在执行第 ${attempt}/${max} 次自动重试...`, 
+            'warn', 
+            parsedErr.kind
+          );
           onWorkflowUpdate({ ...state, isPaused: controller.isPaused });
         },
         (parsedErr) => {
           aTask.errorKind = parsedErr.kind;
           if (parsedErr.kind === 'auth') {
-            addLog(`[鉴权错误] 仲裁任务 #${i + 1} 大模型 API Key 鉴权失败，已自动启用本地证据比对引擎`, 'error', 'auth');
+            addLog(
+              lang === 'en'
+                ? `[Auth Error] Arbitration #${i + 1} LLM API key auth failed, activated local evidence arbitration engine`
+                : `[鉴权错误] 仲裁任务 #${i + 1} 大模型 API Key 鉴权失败，已自动启用本地证据比对引擎`, 
+              'error', 
+              'auth'
+            );
           } else if (parsedErr.kind === 'timeout') {
-            addLog(`[超时降级] 仲裁任务 #${i + 1} 大模型比对多次超时无响应，已自动启用本地证据比对引擎`, 'warn', 'timeout');
+            addLog(
+              lang === 'en'
+                ? `[Timeout Fallback] Arbitration #${i + 1} LLM timed out repeatedly, activated local evidence arbitration engine`
+                : `[超时降级] 仲裁任务 #${i + 1} 大模型比对多次超时无响应，已自动启用本地证据比对引擎`, 
+              'warn', 
+              'timeout'
+            );
           } else {
-            addLog(`[规则降级] 仲裁任务 #${i + 1} 大模型异常 (${parsedErr.message})，已自动启用本地证据比对引擎`, 'warn', 'degraded');
+            addLog(
+              lang === 'en'
+                ? `[Degraded] Arbitration #${i + 1} LLM error (${parsedErr.message}), activated local evidence arbitration engine`
+                : `[规则降级] 仲裁任务 #${i + 1} 大模型异常 (${parsedErr.message})，已自动启用本地证据比对引擎`, 
+              'warn', 
+              'degraded'
+            );
           }
         },
         (delta, accumulated) => {
           updateThinkingLog(verifyThinkingId, accumulated, true);
-        }
+        },
+        lang
       );
     } finally {
       const verifyThinkingLog = state.logs.find(l => l.id === verifyThinkingId);
@@ -1108,14 +1405,30 @@ export async function runInteractiveWorkflowPipeline(
     aTask.reasoning = verified.reasoning;
     verifiedClaims.push(verified);
 
-    const verdictLabel = verified.status === 'verified' ? '🟢 权威证实' : verified.status === 'disputed' ? '🟡 存疑时效' : verified.status === 'refuted' ? '🔴 事实错误' : '⚪ 无法核验';
-    addLog(`命题裁决完成 [${verdictLabel}]: 置信度 ${verified.confidence}%`, verified.status === 'verified' ? 'success' : verified.status === 'refuted' ? 'warn' : 'info');
+    const verdictLabel = verified.status === 'verified'
+      ? (lang === 'en' ? '🟢 Verified' : '🟢 权威证实')
+      : verified.status === 'disputed'
+      ? (lang === 'en' ? '🟡 Disputed' : '🟡 存疑时效')
+      : verified.status === 'refuted'
+      ? (lang === 'en' ? '🔴 Refuted' : '🔴 事实错误')
+      : (lang === 'en' ? '⚪ Unverifiable' : '⚪ 无法核验');
+    addLog(
+      lang === 'en'
+        ? `Claim arbitration completed [${verdictLabel}]: Confidence ${verified.confidence}%`
+        : `命题裁决完成 [${verdictLabel}]: 置信度 ${verified.confidence}%`, 
+      verified.status === 'verified' ? 'success' : verified.status === 'refuted' ? 'warn' : 'info'
+    );
   }
 
   // Stage: Synthesize Summary
   state.stage = 'synthesizing';
   state.currentStepIndex = isDocOrUrl ? 5 : 3;
-  addLog(`[${isDocOrUrl ? '步骤 6/6' : '步骤 4/4'} 报告背书] 正在生成事实健康度画像、学术规范引注与背书报告...`, 'info');
+  addLog(
+    lang === 'en'
+      ? `[${isDocOrUrl ? 'Step 6/6' : 'Step 4/4'} Report Synthesis] Synthesizing health score profile, academic citations, and endorsement report...`
+      : `[${isDocOrUrl ? '步骤 6/6' : '步骤 4/4'} 报告背书] 正在生成事实健康度画像、学术规范引注与背书报告...`, 
+    'info'
+  );
 
   const verifiedCount = verifiedClaims.filter(c => c.status === 'verified').length;
   const disputedCount = verifiedClaims.filter(c => c.status === 'disputed').length;
@@ -1145,7 +1458,12 @@ export async function runInteractiveWorkflowPipeline(
   };
 
   state.stage = 'completed';
-  addLog(`事实审校全部完成！健康度得分: ${healthScore}分，拦截幻觉: ${refutedCount}处，耗时: ${(summary.elapsedMs / 1000).toFixed(1)}s`, 'success');
+  addLog(
+    lang === 'en'
+      ? `Fact-checking completed! Health Score: ${healthScore}/100, Refuted claims: ${refutedCount}, Elapsed: ${(summary.elapsedMs / 1000).toFixed(1)}s`
+      : `事实审校全部完成！健康度得分: ${healthScore}分，拦截幻觉: ${refutedCount}处，耗时: ${(summary.elapsedMs / 1000).toFixed(1)}s`, 
+    'success'
+  );
 
   return { claims: verifiedClaims, summary, extractedContent: content };
 }

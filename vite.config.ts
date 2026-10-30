@@ -1,6 +1,164 @@
 import { defineConfig, Plugin, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
+interface UserQuotaRecord {
+  id: string;
+  ips: Set<string>;
+  browserIds: Set<string>;
+  searchCount: number;
+  aiCount: number;
+  lastAccess: number;
+}
+
+class DailyQuotaManager {
+  private SEARCH_LIMIT = 120;
+  private AI_LIMIT = 300;
+  private dateStr = '';
+  private records = new Map<string, UserQuotaRecord>();
+  private ipToRecordId = new Map<string, string>();
+  private browserToRecordId = new Map<string, string>();
+
+  private getTodayDate(): string {
+    const now = new Date();
+    const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+    const cst = new Date(utc + 8 * 3600000);
+    return cst.toISOString().slice(0, 10);
+  }
+
+  private checkDateReset() {
+    const today = this.getTodayDate();
+    if (this.dateStr !== today) {
+      this.dateStr = today;
+      this.records.clear();
+      this.ipToRecordId.clear();
+      this.browserToRecordId.clear();
+    }
+  }
+
+  public getOrCreateUser(ip: string, browserId: string): UserQuotaRecord {
+    this.checkDateReset();
+    const cleanIp = (ip || '127.0.0.1').trim();
+    const cleanBrowser = (browserId || 'default_browser').trim();
+
+    let recIdByIp = this.ipToRecordId.get(cleanIp);
+    let recIdByBrowser = this.browserToRecordId.get(cleanBrowser);
+
+    // Merge if both exist and differ (IP or browser match -> same user)
+    if (recIdByIp && recIdByBrowser && recIdByIp !== recIdByBrowser) {
+      const recA = this.records.get(recIdByIp);
+      const recB = this.records.get(recIdByBrowser);
+      if (recA && recB) {
+        recA.searchCount = recA.searchCount + recB.searchCount;
+        recA.aiCount = recA.aiCount + recB.aiCount;
+        recB.ips.forEach(i => { recA.ips.add(i); this.ipToRecordId.set(i, recA.id); });
+        recB.browserIds.forEach(b => { recA.browserIds.add(b); this.browserToRecordId.set(b, recA.id); });
+        recA.lastAccess = Date.now();
+        this.records.delete(recB.id);
+        return recA;
+      }
+    }
+
+    if (recIdByIp) {
+      const rec = this.records.get(recIdByIp);
+      if (rec) {
+        rec.browserIds.add(cleanBrowser);
+        this.browserToRecordId.set(cleanBrowser, rec.id);
+        rec.lastAccess = Date.now();
+        return rec;
+      }
+    }
+
+    if (recIdByBrowser) {
+      const rec = this.records.get(recIdByBrowser);
+      if (rec) {
+        rec.ips.add(cleanIp);
+        this.ipToRecordId.set(cleanIp, rec.id);
+        rec.lastAccess = Date.now();
+        return rec;
+      }
+    }
+
+    const newId = 'u_' + Math.random().toString(36).slice(2, 10);
+    const newRec: UserQuotaRecord = {
+      id: newId,
+      ips: new Set([cleanIp]),
+      browserIds: new Set([cleanBrowser]),
+      searchCount: 0,
+      aiCount: 0,
+      lastAccess: Date.now()
+    };
+    this.records.set(newId, newRec);
+    this.ipToRecordId.set(cleanIp, newId);
+    this.browserToRecordId.set(cleanBrowser, newId);
+    return newRec;
+  }
+
+  public getQuota(ip: string, browserId: string) {
+    const user = this.getOrCreateUser(ip, browserId);
+    return {
+      date: this.dateStr || this.getTodayDate(),
+      search: {
+        used: user.searchCount,
+        limit: this.SEARCH_LIMIT,
+        remaining: Math.max(0, this.SEARCH_LIMIT - user.searchCount)
+      },
+      ai: {
+        used: user.aiCount,
+        limit: this.AI_LIMIT,
+        remaining: Math.max(0, this.AI_LIMIT - user.aiCount)
+      }
+    };
+  }
+
+  public checkAndConsumeSearch(ip: string, browserId: string): { allowed: boolean; remaining: number; used: number; limit: number } {
+    const user = this.getOrCreateUser(ip, browserId);
+    if (user.searchCount >= this.SEARCH_LIMIT) {
+      return { allowed: false, remaining: 0, used: user.searchCount, limit: this.SEARCH_LIMIT };
+    }
+    user.searchCount += 1;
+    return { allowed: true, remaining: this.SEARCH_LIMIT - user.searchCount, used: user.searchCount, limit: this.SEARCH_LIMIT };
+  }
+
+  public checkAndConsumeAI(ip: string, browserId: string): { allowed: boolean; remaining: number; used: number; limit: number } {
+    const user = this.getOrCreateUser(ip, browserId);
+    if (user.aiCount >= this.AI_LIMIT) {
+      return { allowed: false, remaining: 0, used: user.aiCount, limit: this.AI_LIMIT };
+    }
+    user.aiCount += 1;
+    return { allowed: true, remaining: this.AI_LIMIT - user.aiCount, used: user.aiCount, limit: this.AI_LIMIT };
+  }
+}
+
+const devQuotaManager = new DailyQuotaManager();
+
+function getClientIp(req: any): string {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (forwarded) {
+    const first = (typeof forwarded === 'string' ? forwarded : forwarded[0]).split(',')[0].trim();
+    if (first) return normalizeIp(first);
+  }
+  const sock = req.socket?.remoteAddress;
+  if (sock) return normalizeIp(sock);
+  return '127.0.0.1';
+}
+
+function normalizeIp(ip: string): string {
+  if (ip === '::1' || ip === '::ffff:127.0.0.1') return '127.0.0.1';
+  if (ip.startsWith('::ffff:')) return ip.replace('::ffff:', '');
+  return ip;
+}
+
+function getBrowserId(req: any, body?: any): string {
+  const headerId = req.headers['x-client-id'] || req.headers['x-browser-id'];
+  if (headerId && typeof headerId === 'string' && headerId.trim()) {
+    return headerId.trim();
+  }
+  if (body?.clientId || body?.browserId) {
+    return String(body.clientId || body.browserId).trim();
+  }
+  return 'default_browser';
+}
+
 function apiDevServerPlugin(env: Record<string, string> = {}): Plugin {
   return {
     name: 'api-dev-server',
@@ -14,13 +172,23 @@ function apiDevServerPlugin(env: Record<string, string> = {}): Plugin {
         if (req.method === 'OPTIONS') {
           res.setHeader('Access-Control-Allow-Origin', '*');
           res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-          res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+          res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Client-Id, X-Browser-Id');
           res.statusCode = 204;
           return res.end();
         }
 
         if (req.method === 'GET') {
           const path = (req.url || '').split('?')[0];
+          if (path === '/api/quota') {
+            const ip = getClientIp(req);
+            const browserId = getBrowserId(req);
+            const quota = devQuotaManager.getQuota(ip, browserId);
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Content-Type', 'application/json; charset=utf-8');
+            res.statusCode = 200;
+            return res.end(JSON.stringify(quota));
+          }
+
           if (path === '/api/search') {
             res.setHeader('Access-Control-Allow-Origin', '*');
             res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -50,14 +218,15 @@ function apiDevServerPlugin(env: Record<string, string> = {}): Plugin {
               const path = (req.url || '').split('?')[0];
 
               if (path === '/api/search') {
-                let apiKey = (
+                let clientKey = (
                   req.headers.authorization?.replace(/^Bearer\s+/i, '') ||
                   body.apiKey ||
-                  env.YUANBAO_API_KEY ||
-                  process.env.YUANBAO_API_KEY ||
                   ''
-                ).trim();
-                apiKey = apiKey.replace(/^Bearer\s+/i, '').replace(/^["']|["']$/g, '').trim();
+                ).replace(/^Bearer\s+/i, '').replace(/^["']|["']$/g, '').trim();
+
+                const serverKey = (env.YUANBAO_API_KEY || process.env.YUANBAO_API_KEY || '').trim();
+                const isCustomKey = Boolean(clientKey && clientKey !== serverKey);
+                const apiKey = isCustomKey ? clientKey : serverKey;
 
                 if (!apiKey) {
                   res.statusCode = 400;
@@ -69,6 +238,27 @@ function apiDevServerPlugin(env: Record<string, string> = {}): Plugin {
                       }
                     }
                   }));
+                }
+
+                // If using free default key, enforce daily quota (120 searches / day)
+                if (!isCustomKey) {
+                  const ip = getClientIp(req);
+                  const browserId = getBrowserId(req, body);
+                  const quotaCheck = devQuotaManager.checkAndConsumeSearch(ip, browserId);
+                  if (!quotaCheck.allowed) {
+                    res.statusCode = 429;
+                    return res.end(JSON.stringify({
+                      Response: {
+                        Error: {
+                          Code: 'QuotaExceeded',
+                          Message: `今日元宝搜索免费额度已达上限 (${quotaCheck.used}/${quotaCheck.limit}次)。您可以在设置中配置自定义 API Key 继续使用。`
+                        }
+                      },
+                      error: `今日元宝搜索免费额度已达上限 (${quotaCheck.used}/${quotaCheck.limit}次)。您可以在设置中配置自定义 API Key 继续使用。`,
+                      code: 'QuotaExceeded',
+                      quota: quotaCheck
+                    }));
+                  }
                 }
 
                 const query = (body.Query || body.query || '').trim();
@@ -119,20 +309,38 @@ function apiDevServerPlugin(env: Record<string, string> = {}): Plugin {
                 }
               }
 
-              if (req.url === '/api/ai') {
-                const apiKey = (
-                  req.headers.authorization?.replace('Bearer ', '') ||
+              if (req.url === '/api/ai' || path === '/api/ai') {
+                let clientKey = (
+                  req.headers.authorization?.replace(/^Bearer\s+/i, '') ||
                   body.apiKey ||
-                  env.AI_API_KEY ||
-                  process.env.AI_API_KEY ||
                   ''
-                ).trim();
+                ).replace(/^Bearer\s+/i, '').replace(/^["']|["']$/g, '').trim();
+
+                const serverKey = (env.AI_API_KEY || process.env.AI_API_KEY || '').trim();
+                const isCustomKey = Boolean(clientKey && clientKey !== serverKey);
+                const apiKey = isCustomKey ? clientKey : serverKey;
 
                 if (!apiKey) {
                   res.statusCode = 400;
                   return res.end(JSON.stringify({ error: '未提供 AI API Key，请在设置中配置或在 .env.local 中配置 AI_API_KEY' }));
                 }
-                let targetUrl = (body.baseUrl || 'https://token.sensenova.cn/v1/chat/completions').trim();
+
+                // If using free default key, enforce daily quota (300 AI calls / day)
+                if (!isCustomKey) {
+                  const ip = getClientIp(req);
+                  const browserId = getBrowserId(req, body);
+                  const quotaCheck = devQuotaManager.checkAndConsumeAI(ip, browserId);
+                  if (!quotaCheck.allowed) {
+                    res.statusCode = 429;
+                    return res.end(JSON.stringify({
+                      error: `今日 AI 接口免费额度已达上限 (${quotaCheck.used}/${quotaCheck.limit}次)。您可以在设置中配置自定义 API Key 继续使用。`,
+                      code: 'QuotaExceeded',
+                      quota: quotaCheck
+                    }));
+                  }
+                }
+
+                let targetUrl = (body.baseUrl || env.AI_BASE_URL || 'https://token.sensenova.cn/v1/chat/completions').trim();
                 if (!targetUrl.endsWith('/chat/completions') && !targetUrl.includes('/chat/completions')) {
                   targetUrl = targetUrl.replace(/\/+$/, '') + '/chat/completions';
                 }
@@ -145,7 +353,7 @@ function apiDevServerPlugin(env: Record<string, string> = {}): Plugin {
 
                 try {
                   const reqPayload: any = {
-                    model: (body.model || 'sensenova-6.8-flash-lite').trim(),
+                    model: (body.model || env.AI_MODEL || 'sensenova-6.8-flash-lite').trim(),
                     messages: body.messages,
                     temperature: body.temperature ?? 0.1,
                     stream: isStream,

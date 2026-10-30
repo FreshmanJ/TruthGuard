@@ -46,7 +46,9 @@ export interface VerificationSummary {
 }
 
 export interface UserSettings {
+  useCustomYuanbaoKey: boolean;
   yuanbaoApiKey: string;
+  useCustomAiKey: boolean;
   aiApiKey: string;
   aiBaseUrl: string;
   aiModel: string;
@@ -57,7 +59,9 @@ export interface UserSettings {
 }
 
 export const DEFAULT_SETTINGS: UserSettings = {
+  useCustomYuanbaoKey: false,
   yuanbaoApiKey: '',
+  useCustomAiKey: false,
   aiApiKey: '',
   aiBaseUrl: 'https://token.sensenova.cn/v1/chat/completions',
   aiModel: 'sensenova-6.8-flash-lite',
@@ -117,7 +121,7 @@ export type WorkflowStage =
   | 'aborted' 
   | 'error';
 
-export type APIErrorKind = 'timeout' | 'auth' | 'rate_limit' | 'server' | 'client' | 'network' | 'degraded';
+export type APIErrorKind = 'timeout' | 'auth' | 'rate_limit' | 'quota_exceeded' | 'server' | 'client' | 'network' | 'degraded';
 
 export interface CategorizedAPIError {
   kind: APIErrorKind;

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TruthGuard 事实检察官 - 隐私政策 (Privacy Policy)</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #10b981;
+      --accent-cyan: #06b6d4;
+      --border: #334155;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.6;
+      padding: 40px 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      padding: 40px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .logo {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+    }
+    h1 {
+      font-size: 26px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 12px;
+      padding: 4px 10px;
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent);
+      border-radius: 20px;
+      margin-top: 6px;
+    }
+    h2 {
+      font-size: 19px;
+      color: var(--accent-cyan);
+      margin: 28px 0 12px;
+      font-weight: 600;
+    }
+    p, li {
+      color: var(--text-muted);
+      font-size: 15px;
+      margin-bottom: 10px;
+    }
+    ul {
+      padding-left: 20px;
+      margin-bottom: 16px;
+    }
+    strong {
+      color: var(--text);
+    }
+    .lang-toggle {
+      float: right;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .footer {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      font-size: 13px;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1>TruthGuard 事实检察官 隐私政策</h1>
+        <p class="badge">生效日期：2026年10月 · 适用于 Chrome / Microsoft Edge 浏览器扩展</p>
+      </div>
+    </div>
+
+    <section>
+      <h2>1. 概述与核心隐私承诺</h2>
+      <p>TruthGuard（以下简称“我们”或“本插件”）是一款致力于帮助用户进行学术研究、技术写作与信息辨伪的事实核验副驾驶工具。我们高度尊重并保护用户的隐私权。<strong>我们不建立用户画像、不追踪用户浏览历史、不向任何第三方出售或滥用您的个人隐私数据。</strong></p>
+    </section>
+
+    <section>
+      <h2>2. 数据收集与使用说明</h2>
+      <ul>
+        <li><strong>本地配置数据（chrome.storage.local）</strong>：用户在插件设置面板中配置的 API Key（如腾讯元宝搜索 Key、大模型 Key）、推理模型名称及自定义代理地址，均严格存储在用户本地浏览器的隔离沙盒中。本插件不会将您的私有密钥上传至任何未经您授权的私有服务器。</li>
+        <li><strong>选中文本与核验内容</strong>：仅当您主动触发核验操作（选中文本后点击右键菜单「使用 TruthGuard 事实核验」或在插件弹窗中点击核验）时，所选文本才会作为检索与推理命题，通过安全加密链路（HTTPS）直接发送至您所配置的腾讯云元宝搜索 API 与 AI 大模型推理接口。</li>
+        <li><strong>无后台自动监听</strong>：插件绝不会在未经用户明确交互操作的情况下，自动在后台爬取、窃取或记录您在任何网页上的输入、密码、Cookies 或访问历史。</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>3. 浏览器权限使用说明 (Permissions Justification)</h2>
+      <p>为实现核心功能，本插件在 <code>manifest.json</code> 中声明了以下必要权限：</p>
+      <ul>
+        <li><code>storage</code>：仅用于在本地持久化保存用户的偏好设置与 API 密钥。</li>
+        <li><code>contextMenus</code>：在浏览器右键菜单中添加「使用 TruthGuard 事实核验」选项，便于快捷调起划词查证。</li>
+        <li><code>activeTab</code> 与 <code>scripting</code>：当且仅当用户主动触发核验时，向当前活动标签页渲染轻量悬浮胶囊与全屏工作过程拓扑树浮窗。</li>
+        <li><code>host_permissions (&lt;all_urls&gt;)</code>：允许用户在任意合规网页（学术网站、新闻资讯、技术博客等）上划选文本并调用核验接口，以及允许插件背景进程与腾讯云元宝搜索及模型 API 通信。</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>4. 第三方服务与链接</h2>
+      <p>在核验执行期间，插件将通过安全网络协议连接至：</p>
+      <ul>
+        <li>腾讯云元宝搜索开放平台（Tencent Cloud Yuanbao Search API - api.wsa.cloud.tencent.com）用于召回互联网去噪证据。</li>
+        <li>用户所选的大模型推理服务商接口（如商汤 SenseNova、OpenAI 兼容端点等）用于事实交叉比对与审计裁决。</li>
+      </ul>
+      <p>相关第三方服务受其各自的隐私政策与服务协议约束。</p>
+    </section>
+
+    <section>
+      <h2>5. 用户的权利与数据清除</h2>
+      <p>您随时拥有对本地数据的绝对控制权：</p>
+      <ul>
+        <li>您可以在插件 Popup 弹窗的「设置」中随时清空或修改您的 API 密钥与偏好配置。</li>
+        <li>在浏览器扩展管理界面中卸载本插件，将立即彻底清除本地存储的所有插件相关数据。</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>6. 联系我们</h2>
+      <p>如果您对本隐私政策有任何疑问、意见或建议，欢迎通过 GitHub Issues 或开发者邮箱与我们取得联系。</p>
+    </section>
+
+    <div class="footer">
+      <p>© 2026 TruthGuard Team. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>

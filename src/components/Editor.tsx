@@ -1,11 +1,10 @@
 import React, { useState, useRef, ChangeEvent } from 'react';
 import { 
-  Play, Pause, RotateCcw, FileText, CheckCircle2, Wand2, 
-  Sparkles, BookMarked, Clock, Check, Upload, Globe2,
+  Play, Pause, RotateCcw, FileText, Upload, Globe2,
   Image as ImageIcon, AlertCircle, RefreshCw, X, Eye,
-  FileCheck
+  FileCheck, BookMarked, Clock, Sparkles
 } from 'lucide-react';
-import { SAMPLE_PRESETS, SamplePreset } from '../data/samples';
+import { getSamplePresets, SamplePreset } from '../data/samples';
 import { 
   Claim, SourceInputType, ExtractedMediaItem, 
   SourceInspectionTask, MultimodalExtractionTask 
@@ -15,6 +14,7 @@ import {
   inspectDocumentFile, extractDocumentContent, inspectAndExtractUrl,
   DocumentSamplePreset, UrlSamplePreset
 } from '../services/docExtractor';
+import { useI18n } from '../i18n/context';
 
 interface EditorProps {
   content: string;
@@ -53,7 +53,6 @@ export const Editor: React.FC<EditorProps> = ({
   onResume,
   claims,
   onInjectCitations,
-  onApplyAllCorrections,
   inputType,
   onInputTypeChange,
   sourceNameOrUrl,
@@ -68,12 +67,15 @@ export const Editor: React.FC<EditorProps> = ({
   onExtractionTaskChange,
   title,
 }) => {
+  const { lang, t, interpolate } = useI18n();
   const [urlInput, setUrlInput] = useState<string>(sourceNameOrUrl || '');
   const [isParsingDoc, setIsParsingDoc] = useState<boolean>(false);
   const [isFetchingUrl, setIsFetchingUrl] = useState<boolean>(false);
   const [parseError, setParseError] = useState<string | null>(null);
   const [selectedLightboxImage, setSelectedLightboxImage] = useState<ExtractedMediaItem | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const samplePresets = getSamplePresets(lang);
 
   // 1. Text Preset selection
   const handleSelectSampleText = (sample: SamplePreset) => {
@@ -102,7 +104,9 @@ export const Editor: React.FC<EditorProps> = ({
       format: preset.format.toUpperCase(),
       fileSizeFormatted: preset.sizeFormatted,
       magicBytesValid: true,
-      securitySummary: '预检通过：魔数结构匹配，未检测到恶意可执行宏',
+      securitySummary: lang === 'en' 
+        ? 'Pre-check passed: Magic bytes matched, no malicious executable macros detected' 
+        : '预检通过：魔数结构匹配，未检测到恶意可执行宏',
       latencyMs: 35
     });
     onExtractionTaskChange({
@@ -132,7 +136,9 @@ export const Editor: React.FC<EditorProps> = ({
       httpStatus: 200,
       sslSecure: true,
       magicBytesValid: true,
-      securitySummary: `连通性检测通过：HTTP 200 OK · TLS 1.3 · 来源域 [${preset.domain}]`,
+      securitySummary: lang === 'en'
+        ? `Connectivity verified: HTTP 200 OK · TLS 1.3 · Origin [${preset.domain}]`
+        : `连通性检测通过：HTTP 200 OK · TLS 1.3 · 来源域 [${preset.domain}]`,
       latencyMs: 48
     });
     onExtractionTaskChange({
@@ -161,7 +167,7 @@ export const Editor: React.FC<EditorProps> = ({
       onInspectionTaskChange(inspectRes);
 
       if (!inspectRes.passed) {
-        throw new Error(inspectRes.error || '文档未通过格式可用性校验');
+        throw new Error(inspectRes.error || (lang === 'en' ? 'Document failed format & integrity check' : '文档未通过格式可用性校验'));
       }
 
       const extractRes = await extractDocumentContent(file);
@@ -175,7 +181,7 @@ export const Editor: React.FC<EditorProps> = ({
         latencyMs: extractRes.latencyMs
       });
     } catch (err: any) {
-      setParseError(err.message || '文档解析失败，请检查文件格式是否受损');
+      setParseError(err.message || (lang === 'en' ? 'Document parsing failed, please check file integrity' : '文档解析失败，请检查文件格式是否受损'));
     } finally {
       setIsParsingDoc(false);
     }
@@ -194,14 +200,14 @@ export const Editor: React.FC<EditorProps> = ({
       onInspectionTaskChange(res.inspection);
 
       if (!res.inspection.passed) {
-        throw new Error(res.inspection.error || '网页无法访问或未通过合规性校验');
+        throw new Error(res.inspection.error || (lang === 'en' ? 'Webpage inaccessible or failed security check' : '网页无法访问或未通过合规性校验'));
       }
 
       onChange(res.text);
       onExtractedImagesChange(res.extraction.images);
       onExtractionTaskChange(res.extraction);
     } catch (err: any) {
-      setParseError(err.message || '网页抓取失败，请检查链接可达性');
+      setParseError(err.message || (lang === 'en' ? 'Webpage crawl failed, please verify the URL' : '网页抓取失败，请检查链接可达性'));
     } finally {
       setIsFetchingUrl(false);
     }
@@ -220,10 +226,9 @@ export const Editor: React.FC<EditorProps> = ({
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const refutedCount = claims.filter(c => c.status === 'refuted' || c.status === 'disputed').length;
   const verifiedCount = claims.filter(c => c.status === 'verified').length;
   const wordCount = content.trim().length;
-  const estimatedReadTime = Math.max(1, Math.ceil(wordCount / 400));
+  const estimatedReadTime = Math.max(1, Math.ceil(wordCount / (lang === 'en' ? 800 : 400)));
   const isDocOrUrl = inputType === 'document' || inputType === 'url';
 
   return (
@@ -236,20 +241,20 @@ export const Editor: React.FC<EditorProps> = ({
             <FileText className="h-3.5 w-3.5 text-yuanbao-400" />
           </div>
           <h3 className="text-xs font-bold text-slate-800 tracking-tight whitespace-nowrap">
-            {title || '待检查原稿'}
+            {title || t.editor.title}
           </h3>
           <div className="hidden sm:flex items-center gap-1.5 pl-1.5 text-[11px] text-slate-400 font-mono">
             <span>•</span>
-            <span className="font-semibold text-slate-600">{wordCount} 字</span>
+            <span className="font-semibold text-slate-600">{wordCount} {t.editor.wordCountSuffix}</span>
             {extractedImages.length > 0 && (
               <>
                 <span>•</span>
-                <span className="text-teal-700 font-semibold">{extractedImages.length} 图</span>
+                <span className="text-teal-700 font-semibold">{extractedImages.length} {t.editor.imageCountSuffix}</span>
               </>
             )}
             <span>•</span>
             <span className="flex items-center gap-0.5">
-              <Clock className="h-3 w-3" /> 约 {estimatedReadTime} 分钟
+              <Clock className="h-3 w-3" /> {t.editor.readTimePrefix} {estimatedReadTime} {t.editor.readTimeSuffix}
             </span>
           </div>
         </div>
@@ -269,10 +274,10 @@ export const Editor: React.FC<EditorProps> = ({
                   ? 'bg-slate-900 text-white font-bold shadow-2xs'
                   : 'border border-slate-200/90 bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900'
               }`}
-              title="切换为文字录入模式，支持直接键盘键入或粘贴文章长文"
+              title={t.editor.modeTextTitle}
             >
               <FileText className="h-3 w-3" />
-              <span>文字录入</span>
+              <span>{t.editor.modeText}</span>
             </button>
 
             <button
@@ -286,10 +291,10 @@ export const Editor: React.FC<EditorProps> = ({
                   ? 'bg-slate-900 text-white font-bold shadow-2xs'
                   : 'border border-slate-200/90 bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900'
               }`}
-              title="切换为文档导入模式，支持 Word (.docx)、PDF (.pdf)、TXT 文档"
+              title={t.editor.modeDocTitle}
             >
               <Upload className="h-3 w-3" />
-              <span>文档导入</span>
+              <span>{t.editor.modeDoc}</span>
             </button>
 
             <button
@@ -303,10 +308,10 @@ export const Editor: React.FC<EditorProps> = ({
                   ? 'bg-slate-900 text-white font-bold shadow-2xs'
                   : 'border border-slate-200/90 bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900'
               }`}
-              title="切换为网页链接模式，输入 URL 自动穿透抓取网页正文与配图"
+              title={t.editor.modeUrlTitle}
             >
               <Globe2 className="h-3 w-3" />
-              <span>网页链接</span>
+              <span>{t.editor.modeUrl}</span>
             </button>
           </div>
 
@@ -317,20 +322,20 @@ export const Editor: React.FC<EditorProps> = ({
             onClick={handleClear}
             disabled={isLoading || (!content && !uploadedFile && !sourceNameOrUrl && !urlInput)}
             className="inline-flex items-center gap-1 rounded-lg border border-rose-200/90 bg-rose-50/70 px-2.5 py-1 text-xs font-medium text-rose-700 hover:bg-rose-100 hover:border-rose-300 transition shadow-2xs disabled:opacity-35 disabled:pointer-events-none cursor-pointer active:scale-95"
-            title="一键清空原稿文本、重置导入文档或网页链接"
+            title={t.editor.clearDraftTitle}
           >
             <RotateCcw className="h-3 w-3 text-rose-600" />
-            <span>清空原稿</span>
+            <span>{t.editor.clearDraft}</span>
           </button>
         </div>
       </div>
 
-      {/* Area 2: Single-line Context Toolbar (Adapts to Active Mode cleanly without tab-switching) */}
+      {/* Area 2: Single-line Context Toolbar */}
       {inputType === 'text' && (
         <div className="border-b border-slate-100 bg-[#FAFAFA]/70 px-4 py-1.5 flex flex-wrap items-center justify-between gap-2 text-xs">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[11px] text-slate-400 font-medium">快捷样例:</span>
-            {SAMPLE_PRESETS.map((sample) => (
+            <span className="text-[11px] text-slate-400 font-medium">{t.editor.quickSamples}</span>
+            {samplePresets.map((sample) => (
               <button
                 key={sample.id}
                 onClick={() => handleSelectSampleText(sample)}
@@ -342,7 +347,7 @@ export const Editor: React.FC<EditorProps> = ({
             ))}
           </div>
           <span className="text-[11px] text-slate-400 font-mono hidden md:inline">
-            直接在下方编辑区键入或粘贴待核验草稿
+            {t.editor.textModeHint}
           </span>
         </div>
       )}
@@ -365,13 +370,13 @@ export const Editor: React.FC<EditorProps> = ({
               className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-800 shadow-2xs hover:bg-slate-50 transition active:scale-95 disabled:opacity-50 cursor-pointer"
             >
               <Upload className="h-3 w-3 text-slate-600" />
-              <span>{uploadedFile || sourceNameOrUrl ? '更换本地文档' : '选择本地 Word / PDF / TXT'}</span>
+              <span>{uploadedFile || sourceNameOrUrl ? t.editor.changeDocBtn : t.editor.chooseDocBtn}</span>
             </button>
 
             {isParsingDoc && (
               <span className="inline-flex items-center gap-1 text-xs text-sky-700 font-medium animate-pulse">
                 <RefreshCw className="h-3 w-3 animate-spin" />
-                <span>正在校验魔数并提取图文...</span>
+                <span>{t.editor.parsingDocNotice}</span>
               </span>
             )}
 
@@ -388,7 +393,7 @@ export const Editor: React.FC<EditorProps> = ({
 
           {/* Document Sample Presets */}
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[11px] text-slate-400 font-medium">样例文档:</span>
+            <span className="text-[11px] text-slate-400 font-medium">{t.editor.sampleDocLabel}</span>
             {SAMPLE_DOCUMENT_PRESETS.map((preset) => (
               <button
                 key={preset.id}
@@ -396,7 +401,7 @@ export const Editor: React.FC<EditorProps> = ({
                 disabled={isLoading}
                 className="rounded-lg border border-slate-200/80 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-600 shadow-2xs hover:bg-slate-100 hover:text-slate-900 transition disabled:opacity-50 cursor-pointer"
               >
-                {preset.tag.split('(')[0].trim()}
+                {lang === 'en' ? preset.format.toUpperCase() + ' Doc' : preset.tag.split('(')[0].trim()}
               </button>
             ))}
           </div>
@@ -414,7 +419,7 @@ export const Editor: React.FC<EditorProps> = ({
                 value={urlInput}
                 onChange={(e) => setUrlInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleFetchUrl()}
-                placeholder="键入待审校的公网文章或论文 URL，如 https://..."
+                placeholder={t.editor.urlPlaceholder}
                 className="w-full rounded-lg border border-slate-300 bg-white pl-8 pr-7 py-1 text-xs text-slate-800 placeholder-slate-400 focus:border-yuanbao-500 focus:outline-none focus:ring-1 focus:ring-yuanbao-500 font-mono shadow-2xs"
               />
               {urlInput && (
@@ -435,12 +440,12 @@ export const Editor: React.FC<EditorProps> = ({
               {isFetchingUrl ? (
                 <>
                   <RefreshCw className="h-3 w-3 animate-spin" />
-                  <span>抓取中...</span>
+                  <span>{t.editor.fetchingUrlBtn}</span>
                 </>
               ) : (
                 <>
                   <Sparkles className="h-3 w-3 text-yuanbao-400" />
-                  <span>提取网页</span>
+                  <span>{t.editor.fetchUrlBtn}</span>
                 </>
               )}
             </button>
@@ -448,7 +453,7 @@ export const Editor: React.FC<EditorProps> = ({
 
           {/* URL Presets */}
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[11px] text-slate-400 font-medium">样例链接:</span>
+            <span className="text-[11px] text-slate-400 font-medium">{t.editor.sampleUrlLabel}</span>
             {SAMPLE_URL_PRESETS.map((preset) => (
               <button
                 key={preset.id}
@@ -456,7 +461,7 @@ export const Editor: React.FC<EditorProps> = ({
                 disabled={isLoading}
                 className="rounded-lg border border-slate-200/80 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-600 shadow-2xs hover:bg-slate-100 hover:text-slate-900 transition disabled:opacity-50 cursor-pointer whitespace-nowrap"
               >
-                {preset.tag}
+                {lang === 'en' ? preset.domain : preset.tag}
               </button>
             ))}
           </div>
@@ -471,15 +476,15 @@ export const Editor: React.FC<EditorProps> = ({
         </div>
       )}
 
-      {/* Extracted Images Ribbon (Seamlessly visible alongside text, no tab switching!) */}
+      {/* Extracted Images Ribbon */}
       {extractedImages.length > 0 && (
         <div className="px-4 py-2 border-b border-slate-100 bg-teal-50/40 flex items-center justify-between gap-2 overflow-x-auto select-none flex-shrink-0">
           <div className="flex items-center gap-2 flex-shrink-0">
             <span className="inline-flex items-center gap-1 rounded-md bg-teal-100/90 px-2 py-0.5 text-[11px] font-bold text-teal-800">
               <ImageIcon className="h-3 w-3 text-teal-700" />
-              提取图文 ({extractedImages.length} 张)
+              {interpolate(t.editor.extractedMedia, { count: extractedImages.length })}
             </span>
-            <span className="text-[11px] text-slate-400 hidden sm:inline">点击插图可放大查看:</span>
+            <span className="text-[11px] text-slate-400 hidden sm:inline">{t.editor.clickToViewImg}</span>
           </div>
 
           <div className="flex items-center gap-2 overflow-x-auto py-0.5">
@@ -488,11 +493,11 @@ export const Editor: React.FC<EditorProps> = ({
                 key={img.id || idx}
                 onClick={() => setSelectedLightboxImage(img)}
                 className="group relative flex items-center gap-1.5 rounded-lg border border-teal-200 bg-white px-2 py-1 hover:border-teal-400 hover:shadow-2xs transition cursor-pointer flex-shrink-0"
-                title={img.caption || '查看高清插图'}
+                title={img.caption || t.editor.viewHDExtension}
               >
                 <img src={img.url} alt={img.caption || 'preview'} className="h-5 w-5 rounded object-cover" />
                 <span className="text-[11px] font-medium text-slate-700 max-w-[130px] truncate">
-                  {img.caption || `插图 #${idx + 1}`}
+                  {img.caption || `${lang === 'en' ? 'Figure' : '插图'} #${idx + 1}`}
                 </span>
                 <Eye className="h-3 w-3 text-slate-400 group-hover:text-teal-600" />
               </button>
@@ -501,17 +506,17 @@ export const Editor: React.FC<EditorProps> = ({
         </div>
       )}
 
-      {/* Editor Content Area (Clean, single-focused textarea always visible) */}
+      {/* Editor Content Area */}
       <div className="relative flex-1 min-h-0 p-4 sm:p-5 overflow-hidden flex flex-col bg-white">
         <textarea
           value={content}
           onChange={(e) => onChange(e.target.value)}
           placeholder={
             inputType === 'document'
-              ? "在此直接查看或修改从 Word/PDF/TXT 文档中解析出的正文...&#10;&#10;✦ 系统将先执行：1. 格式与可用性预检 → 2. 多模态图文提取 → 3. 命题智能拆解&#10;✦ 随后毫秒级调用腾讯元宝搜索千亿信源进行事实交叉审校"
+              ? t.editor.placeholderDoc
               : inputType === 'url'
-              ? "在此直接查看或修改从网页链接中抓取出的文章正文...&#10;&#10;✦ 系统将先执行：1. 协议与可用性预检 → 2. 多模态图文提取 → 3. 命题智能拆解&#10;✦ 随后毫秒级调用腾讯元宝搜索千亿信源进行事实交叉审校"
-              : "在此键入或粘贴需进行事实核验的技术博客、论文草稿、商业分析或大模型初稿...&#10;&#10;✦ 系统将自动提取可客观证伪命题&#10;✦ 调用腾讯云元宝搜索千亿信源进行毫秒级交叉审校&#10;✦ 自动给出红绿灯置信度裁决并生成规范引用"
+              ? t.editor.placeholderUrl
+              : t.editor.placeholderText
           }
           className="flex-1 min-h-0 w-full resize-none border-0 bg-transparent text-[13.5px] leading-relaxed text-slate-800 placeholder-slate-400/90 focus:outline-none focus:ring-0 font-sans selection:bg-yuanbao-100 selection:text-yuanbao-900 overflow-y-auto"
         />
@@ -526,25 +531,12 @@ export const Editor: React.FC<EditorProps> = ({
               onClick={onInjectCitations}
               disabled={isLoading}
               className="group inline-flex items-center gap-1.5 rounded-xl border border-emerald-200/90 bg-emerald-50/80 px-2.5 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 transition shadow-xs active:scale-[0.98] cursor-pointer"
-              title="根据元宝搜索核验信源，在原文末尾自动追加学术引用角标与信源清单"
+              title={t.editor.injectCitationsTitle}
             >
               <BookMarked className="h-3.5 w-3.5 text-emerald-600 group-hover:scale-110 transition" />
-              <span>注入引用角标</span>
+              <span>{t.editor.injectCitationsBtn}</span>
             </button>
           )}
-
-          {/* 一键修正全部幻觉 (暂先隐藏) */}
-          {/* {claims.length > 0 && refutedCount > 0 && (
-            <button
-              onClick={onApplyAllCorrections}
-              disabled={isLoading}
-              className="group inline-flex items-center gap-1.5 rounded-xl border border-rose-200/90 bg-rose-50/80 px-2.5 py-1.5 text-xs font-semibold text-rose-800 hover:bg-rose-100 transition shadow-xs active:scale-[0.98] cursor-pointer"
-              title="根据权威信源证据，一键将文中有争议或虚假陈述替换为官方修正事实"
-            >
-              <Wand2 className="h-3.5 w-3.5 text-rose-600 group-hover:rotate-12 transition" />
-              <span>一键修正全部幻觉 ({refutedCount})</span>
-            </button>
-          )} */}
         </div>
 
         {/* Primary Audit Action CTA */}
@@ -570,24 +562,24 @@ export const Editor: React.FC<EditorProps> = ({
           {isPaused ? (
             <>
               <Play className="h-3.5 w-3.5 fill-white text-white" />
-              <span>继续检查</span>
+              <span>{t.editor.resumeCheckBtn}</span>
             </>
           ) : isLoading ? (
             <>
               <Sparkles className="h-3.5 w-3.5 animate-spin text-white group-hover:hidden" />
               <Pause className="h-3.5 w-3.5 fill-white text-white hidden group-hover:inline-block" />
-              <span className="group-hover:hidden">正在检查中...</span>
-              <span className="hidden group-hover:inline">暂停检查</span>
+              <span className="group-hover:hidden">{t.editor.checkingBtn}</span>
+              <span className="hidden group-hover:inline">{t.editor.pauseCheckBtn}</span>
             </>
           ) : (
             <>
               <Play className="h-3.5 w-3.5 fill-white text-white" />
               <span>
                 {claims.length > 0 
-                  ? '重新检查' 
+                  ? t.editor.recheckBtn 
                   : isDocOrUrl 
-                  ? '开始检查 (预检 → 提取 → 审校)' 
-                  : '开始检查'}
+                  ? t.editor.startCheckWithPrecheckBtn 
+                  : t.editor.startCheckBtn}
               </span>
             </>
           )}
@@ -606,7 +598,7 @@ export const Editor: React.FC<EditorProps> = ({
           >
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h4 className="text-xs font-bold text-slate-800 truncate">
-                {selectedLightboxImage.caption || '抽取的多模态插图预览'}
+                {selectedLightboxImage.caption || t.editor.lightboxTitle}
               </h4>
               <button 
                 onClick={() => setSelectedLightboxImage(null)}
@@ -623,8 +615,8 @@ export const Editor: React.FC<EditorProps> = ({
               />
             </div>
             <p className="text-[11px] text-slate-500 mt-2 font-mono flex items-center justify-between">
-              <span>信源多模态图表 · 支持原稿事实与图表核验</span>
-              <span className="text-slate-400">点击任意空白处关闭</span>
+              <span>{t.editor.lightboxHint}</span>
+              <span className="text-slate-400">{t.editor.lightboxCloseHint}</span>
             </p>
           </div>
         </div>

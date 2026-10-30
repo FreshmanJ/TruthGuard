@@ -1,6 +1,10 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Terminal, ArrowDown, Search, CheckCircle2, Clock, Globe2, AlertCircle, Key, RefreshCw, ZapOff, ShieldAlert, ShieldCheck, Sparkles, Brain, ChevronDown, ChevronUp } from 'lucide-react';
+import { 
+  Terminal, ArrowDown, Clock, Key, RefreshCw, ZapOff, 
+  ShieldAlert, ShieldCheck, Sparkles, Brain, ChevronDown, ChevronUp 
+} from 'lucide-react';
 import { WorkflowLog, WorkflowStage } from '../types';
+import { useI18n } from '../i18n/context';
 
 interface LiveLogsPanelProps {
   logs: WorkflowLog[];
@@ -15,6 +19,7 @@ export const LiveLogsPanel: React.FC<LiveLogsPanelProps> = ({
   isPaused,
   elapsedMs,
 }) => {
+  const { lang, t, interpolate } = useI18n();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [autoScroll, setAutoScroll] = useState(true);
   const [expandedThinkingIds, setExpandedThinkingIds] = useState<Set<string>>(new Set());
@@ -40,47 +45,47 @@ export const LiveLogsPanel: React.FC<LiveLogsPanelProps> = ({
 
   const getTagBadge = (log: WorkflowLog) => {
     // 1. Explicit Error / Warning Kind Classification
-    if (log.errorKind === 'timeout' || log.message.includes('超时')) {
+    if (log.errorKind === 'timeout' || log.message.includes('超时') || log.message.includes('timeout') || log.message.includes('Timed out')) {
       return (
         <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 border border-amber-300 flex-shrink-0 flex items-center gap-1 animate-pulse">
           <Clock className="h-2.5 w-2.5 text-amber-600" />
-          超时重试
+          {t.logs.tagTimeout}
         </span>
       );
     }
 
-    if (log.errorKind === 'auth' || log.message.includes('鉴权')) {
+    if (log.errorKind === 'auth' || log.message.includes('鉴权') || log.message.includes('auth') || log.message.includes('Unauthorized')) {
       return (
         <span className="rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-bold text-rose-800 border border-rose-300 flex-shrink-0 flex items-center gap-1">
           <Key className="h-2.5 w-2.5 text-rose-600" />
-          鉴权错误
+          {t.logs.tagAuth}
         </span>
       );
     }
 
-    if (log.errorKind === 'rate_limit' || log.message.includes('频控')) {
+    if (log.errorKind === 'rate_limit' || log.message.includes('频控') || log.message.includes('rate limit')) {
       return (
         <span className="rounded bg-purple-50 px-1.5 py-0.5 text-[10px] font-bold text-purple-800 border border-purple-300 flex-shrink-0 flex items-center gap-1">
           <Clock className="h-2.5 w-2.5 text-purple-600" />
-          频控超限
+          {t.logs.tagRateLimit}
         </span>
       );
     }
 
-    if (log.errorKind === 'server' || log.message.includes('服务故障')) {
+    if (log.errorKind === 'server' || log.message.includes('服务故障') || log.message.includes('Server error')) {
       return (
         <span className="rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-bold text-rose-800 border border-rose-300 flex-shrink-0 flex items-center gap-1">
           <ZapOff className="h-2.5 w-2.5 text-rose-600" />
-          服务故障
+          {t.logs.tagServer}
         </span>
       );
     }
 
-    if (log.errorKind === 'degraded' || log.message.includes('降级')) {
+    if (log.errorKind === 'degraded' || log.message.includes('降级') || log.message.includes('degraded')) {
       return (
         <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-bold text-indigo-800 border border-indigo-200 flex-shrink-0 flex items-center gap-1">
           <ShieldAlert className="h-2.5 w-2.5 text-indigo-600" />
-          规则降级
+          {t.logs.tagDegraded}
         </span>
       );
     }
@@ -91,60 +96,60 @@ export const LiveLogsPanel: React.FC<LiveLogsPanelProps> = ({
         return (
           <span className="rounded bg-sky-50 px-1.5 py-0.5 text-[10px] font-bold text-sky-800 border border-sky-300 flex-shrink-0 flex items-center gap-1">
             <ShieldCheck className="h-2.5 w-2.5 text-sky-600" />
-            来源预检
+            {t.logs.tagInspect}
           </span>
         );
       case 'extract':
         return (
           <span className="rounded bg-teal-50 px-1.5 py-0.5 text-[10px] font-bold text-teal-800 border border-teal-300 flex-shrink-0 flex items-center gap-1">
             <Sparkles className="h-2.5 w-2.5 text-teal-600" />
-            图文提取
+            {t.logs.tagExtract}
           </span>
         );
       case 'search':
         return (
           <span className="rounded bg-cyan-50 px-1.5 py-0.5 text-[10px] font-bold text-cyan-800 border border-cyan-200/80 flex-shrink-0">
-            WSA搜索
+            {t.logs.tagSearch}
           </span>
         );
       case 'success':
         return (
           <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200/80 flex-shrink-0">
-            证实通过
+            {t.logs.tagSuccess}
           </span>
         );
       case 'warn':
-        if (log.message.includes('重试')) {
+        if (log.message.includes('重试') || log.message.includes('Retry') || log.message.includes('retrying')) {
           return (
             <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 border border-amber-300 flex-shrink-0 flex items-center gap-1">
               <RefreshCw className="h-2.5 w-2.5 text-amber-600 animate-spin" />
-              接口重试
+              {t.logs.tagRetry}
             </span>
           );
         }
         return (
           <span className="rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-bold text-rose-800 border border-rose-200/80 flex-shrink-0">
-            幻觉拦截
+            {t.logs.tagWarn}
           </span>
         );
       case 'error':
         return (
           <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-800 border border-red-200 flex-shrink-0">
-            执行异常
+            {t.logs.tagError}
           </span>
         );
       case 'thinking':
         return (
           <span className="rounded bg-purple-50 px-1.5 py-0.5 text-[10px] font-bold text-purple-700 border border-purple-200 flex-shrink-0 flex items-center gap-1">
             <Brain className="h-2.5 w-2.5 text-purple-600" />
-            深度思考
+            {t.logs.tagThinking}
           </span>
         );
       case 'info':
       default:
         return (
           <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600 border border-slate-200/60 flex-shrink-0">
-            系统事件
+            {t.logs.tagInfo}
           </span>
         );
     }
@@ -162,11 +167,11 @@ export const LiveLogsPanel: React.FC<LiveLogsPanelProps> = ({
           </div>
           <div>
             <h3 className="text-xs font-bold text-slate-800 tracking-tight">
-              2. 实时流水日志 (Stream Logs)
+              {t.logs.title}
             </h3>
           </div>
           <span className="text-[11px] font-mono text-slate-400 pl-1">
-            • 共 {logs.length} 条记录
+            {t.logs.countPrefix} {logs.length} {t.logs.countSuffix}
           </span>
         </div>
 
@@ -175,15 +180,15 @@ export const LiveLogsPanel: React.FC<LiveLogsPanelProps> = ({
           {isRunning ? (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-800 border border-emerald-200">
               <span className={`h-1.5 w-1.5 rounded-full ${isPaused ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse'}`} />
-              {isPaused ? '已暂停' : `穿透中 ${(elapsedMs / 1000).toFixed(1)}s`}
+              {isPaused ? t.logs.statusPaused : `${t.logs.statusRunning} ${(elapsedMs / 1000).toFixed(1)}s`}
             </span>
           ) : stage === 'completed' ? (
             <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10.5px] font-medium text-slate-500">
-              审校已完成
+              {t.logs.statusCompleted}
             </span>
           ) : (
             <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10.5px] font-medium text-slate-400">
-              就绪待命
+              {t.logs.statusReady}
             </span>
           )}
 
@@ -194,10 +199,10 @@ export const LiveLogsPanel: React.FC<LiveLogsPanelProps> = ({
                 ? 'border-emerald-200 bg-emerald-50 text-emerald-800 font-semibold' 
                 : 'border-slate-200 bg-white text-slate-600'
             }`}
-            title="是否随新日志自动滚屏"
+            title="Auto-scroll"
           >
             <ArrowDown className={`h-2.5 w-2.5 ${autoScroll ? 'text-emerald-600' : 'text-slate-400'}`} />
-            <span>自动滚屏 {autoScroll ? '开' : '关'}</span>
+            <span>{t.logs.autoScroll} {autoScroll ? t.logs.on : t.logs.off}</span>
           </button>
         </div>
       </div>
@@ -210,9 +215,9 @@ export const LiveLogsPanel: React.FC<LiveLogsPanelProps> = ({
         {logs.length === 0 ? (
           <div className="flex h-full min-h-[220px] flex-col items-center justify-center text-center p-6 text-slate-400 font-sans">
             <Terminal className="h-8 w-8 text-slate-300 mb-2" />
-            <p className="text-xs font-semibold text-slate-600">等待事实穿透检测启动</p>
+            <p className="text-xs font-semibold text-slate-600">{t.logs.emptyTitle}</p>
             <p className="text-[11px] text-slate-400 mt-1 max-w-xs leading-relaxed">
-              点击「开始检查」，底层与元宝搜索、大模型的每一次具体网络请求与毫秒响应将在此实时展现。
+              {t.logs.emptyDesc}
             </p>
           </div>
         ) : (
@@ -227,7 +232,7 @@ export const LiveLogsPanel: React.FC<LiveLogsPanelProps> = ({
                     key={log.id} 
                     onClick={() => toggleThinking(log.id)}
                     className="group flex items-center gap-2.5 rounded-lg border border-purple-200/90 bg-gradient-to-r from-purple-50/70 via-purple-50/30 to-white px-3 py-1.5 text-slate-700 shadow-2xs transition hover:border-purple-300 hover:bg-purple-50/90 cursor-pointer overflow-hidden"
-                    title="点击展开完整思考过程 (Chain of Thought)"
+                    title={lang === 'en' ? 'Click to expand Chain of Thought' : '点击展开完整思考过程 (Chain of Thought)'}
                   >
                     {/* Timestamp */}
                     <span className="text-[10px] text-slate-400 font-mono select-none flex-shrink-0">
@@ -238,19 +243,19 @@ export const LiveLogsPanel: React.FC<LiveLogsPanelProps> = ({
                     {log.isThinkingActive ? (
                       <span className="rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-bold text-purple-800 border border-purple-300 flex-shrink-0 flex items-center gap-1 animate-pulse">
                         <Brain className="h-2.5 w-2.5 text-purple-600 animate-spin" />
-                        深度思考中
+                        {t.logs.thinkingActive}
                       </span>
                     ) : (
                       <span className="rounded bg-purple-50 px-1.5 py-0.5 text-[10px] font-bold text-purple-700 border border-purple-200 flex-shrink-0 flex items-center gap-1">
                         <Brain className="h-2.5 w-2.5 text-purple-600" />
-                        深度思考
+                        {t.logs.tagThinking}
                       </span>
                     )}
 
-                    {/* Single-line message: strictly 1 line truncated, displaying trailing latest thought */}
+                    {/* Single-line message */}
                     <div className="flex-1 min-w-0 flex items-center gap-1.5 text-xs font-mono text-purple-950/80">
                       <span className="truncate">
-                        {log.message || '正在组织深度思维链...'}
+                        {log.message || t.logs.organizingThoughts}
                       </span>
                       {log.isThinkingActive && (
                         <span className="inline-block w-1.5 h-3 bg-purple-500 animate-pulse flex-shrink-0" />
@@ -261,10 +266,10 @@ export const LiveLogsPanel: React.FC<LiveLogsPanelProps> = ({
                     <div className="flex items-center gap-1 flex-shrink-0 pl-1 text-[10.5px] font-medium text-purple-600 group-hover:text-purple-800 select-none">
                       {log.fullReasoning && (
                         <span className="font-mono text-[9.5px] text-purple-400">
-                          {log.fullReasoning.length}字
+                          {log.fullReasoning.length} {lang === 'en' ? 'chars' : '字'}
                         </span>
                       )}
-                      <span className="hidden sm:inline">展开</span>
+                      <span className="hidden sm:inline">{t.logs.expand}</span>
                       <ChevronDown className="h-3 w-3 transition-transform group-hover:translate-y-0.5" />
                     </div>
                   </div>
@@ -281,7 +286,7 @@ export const LiveLogsPanel: React.FC<LiveLogsPanelProps> = ({
                   <div 
                     onClick={() => toggleThinking(log.id)}
                     className="flex items-center justify-between gap-2 cursor-pointer pb-2 border-b border-purple-200/60 select-none"
-                    title="点击收起思考过程"
+                    title={lang === 'en' ? 'Click to collapse thoughts' : '点击收起思考过程'}
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="text-[10px] text-slate-400 font-mono flex-shrink-0">
@@ -290,16 +295,16 @@ export const LiveLogsPanel: React.FC<LiveLogsPanelProps> = ({
                       {log.isThinkingActive ? (
                         <span className="rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-bold text-purple-800 border border-purple-300 flex items-center gap-1 animate-pulse flex-shrink-0">
                           <Brain className="h-2.5 w-2.5 text-purple-600 animate-spin" />
-                          流式思考中...
+                          {t.logs.thinkingStreaming}
                         </span>
                       ) : (
                         <span className="rounded bg-purple-50 px-1.5 py-0.5 text-[10px] font-bold text-purple-700 border border-purple-200 flex items-center gap-1 flex-shrink-0">
                           <Brain className="h-2.5 w-2.5 text-purple-600" />
-                          SenseNova 深度思维链
+                          {t.logs.thinkingSenseNova}
                         </span>
                       )}
                       <span className="text-[10.5px] font-mono text-purple-600 truncate hidden sm:inline">
-                        共 {log.fullReasoning?.length || 0} 字符 {log.isThinkingActive ? '(流式推理中)' : ''}
+                        {interpolate(t.logs.thinkingCharCount, { count: log.fullReasoning?.length || 0 })} {log.isThinkingActive ? t.logs.thinkingStreamingNotice : ''}
                       </span>
                     </div>
 
@@ -307,7 +312,7 @@ export const LiveLogsPanel: React.FC<LiveLogsPanelProps> = ({
                       type="button"
                       className="flex items-center gap-0.5 text-[10.5px] font-medium text-purple-700 hover:text-purple-900 bg-purple-100/70 hover:bg-purple-100 px-2 py-0.5 rounded transition flex-shrink-0"
                     >
-                      <span>收起</span>
+                      <span>{t.logs.collapse}</span>
                       <ChevronUp className="h-3 w-3" />
                     </button>
                   </div>
@@ -323,11 +328,11 @@ export const LiveLogsPanel: React.FC<LiveLogsPanelProps> = ({
               );
             }
 
-            const isTimeout = log.errorKind === 'timeout' || log.message.includes('超时');
-            const isAuth = log.errorKind === 'auth' || log.message.includes('鉴权');
-            const isRateLimit = log.errorKind === 'rate_limit' || log.message.includes('频控');
-            const isDegraded = log.errorKind === 'degraded' || log.message.includes('降级');
-            const isRetry = log.message.includes('重试') || isTimeout;
+            const isTimeout = log.errorKind === 'timeout' || log.message.includes('超时') || log.message.includes('timeout') || log.message.includes('Timed out');
+            const isAuth = log.errorKind === 'auth' || log.message.includes('鉴权') || log.message.includes('auth');
+            const isRateLimit = log.errorKind === 'rate_limit' || log.message.includes('频控') || log.message.includes('rate limit');
+            const isDegraded = log.errorKind === 'degraded' || log.message.includes('降级') || log.message.includes('degraded');
+            const isRetry = log.message.includes('重试') || log.message.includes('Retry') || isTimeout;
 
             let rowStyle = 'border-slate-200/60 bg-white hover:border-slate-300';
             if (isAuth) {
@@ -367,8 +372,8 @@ export const LiveLogsPanel: React.FC<LiveLogsPanelProps> = ({
 
       {/* Footer Info */}
       <div className="border-t border-slate-200/80 bg-white px-4 py-2 text-[10.5px] text-slate-400 font-mono flex items-center justify-between flex-shrink-0">
-        <span>腾讯云元宝搜索 WSA · 毫秒级千亿索引</span>
-        <span>SenseNova 交叉比对引擎</span>
+        <span>{t.logs.footerLeft}</span>
+        <span>{t.logs.footerRight}</span>
       </div>
     </div>
   );

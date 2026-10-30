@@ -1,4 +1,5 @@
 import { CategorizedAPIError } from '../types';
+import { getBrowserId } from './clientIdentity';
 export type { CategorizedAPIError };
 
 export function classifyAIError(err: any, statusCode?: number): CategorizedAPIError {
@@ -13,7 +14,13 @@ export function classifyAIError(err: any, statusCode?: number): CategorizedAPIEr
     };
   }
 
-  const rawMsg = String(err?.message || err || '');
+  let rawMsg = String(err?.message || err || '');
+  try {
+    const json = JSON.parse(rawMsg);
+    if (json?.error?.message) rawMsg = json.error.message;
+    else if (json?.error && typeof json.error === 'string') rawMsg = json.error;
+    else if (json?.message && typeof json.message === 'string') rawMsg = json.message;
+  } catch {}
 
   if (statusCode === 401 || statusCode === 403 || /401|403|unauthorized|invalid[_\s]api[_\s]key|permission/i.test(rawMsg)) {
     return {
@@ -22,6 +29,16 @@ export function classifyAIError(err: any, statusCode?: number): CategorizedAPIEr
       message: '鉴权认证失败 (API Key 无效或未授权)',
       userHint: 'API Key 不正确、已过期或无权调用该模型，请在右上角「设置」中检查并更新密钥',
       isRetryable: false // 关键：鉴权错误不盲目重试
+    };
+  }
+
+  if (/quotaexceeded|额度已达上限|超出每日免费/i.test(rawMsg)) {
+    return {
+      kind: 'quota_exceeded',
+      statusCode: 429,
+      message: rawMsg || '今日 AI 接口免费额度已达上限 (300次/日)',
+      userHint: '今日公共免费调用额度已用尽，您可以在设置中切换为「自定义 AI API」继续使用',
+      isRetryable: false
     };
   }
 
@@ -49,8 +66,8 @@ export function classifyAIError(err: any, statusCode?: number): CategorizedAPIEr
     return {
       kind: 'client',
       statusCode: statusCode || 400,
-      message: '请求参数或输入文本超长 (400 Bad Request)',
-      userHint: '文本超出了当前模型上下文长度限制',
+      message: rawMsg ? `请求参数错误: ${rawMsg}` : '请求参数或输入文本超长 (400 Bad Request)',
+      userHint: '文本超出了当前模型上下文长度限制或模型参数配置有误',
       isRetryable: false
     };
   }
@@ -106,21 +123,30 @@ export async function callAI(options: AIChatOptions): Promise<string> {
       let usedProxy = true;
 
       try {
+        const browserId = getBrowserId();
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          'X-Client-Id': browserId,
+          'X-Browser-Id': browserId,
+        };
+        if (apiKey && apiKey.trim()) {
+          headers['Authorization'] = `Bearer ${apiKey.trim()}`;
+        }
+
         // 1. Try local dev proxy endpoint first (avoids CORS)
         response = await fetch('/api/ai', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey.trim()}`
-          },
+          headers,
           body: JSON.stringify({
+            apiKey: apiKey.trim() || undefined,
             model: model.trim(),
             baseUrl: baseUrl.trim(),
             messages,
             temperature,
             stream,
             max_tokens: 4096,
-            reasoning_effort: reasoningEffort
+            reasoning_effort: reasoningEffort,
+            clientId: browserId
           }),
           signal: controller.signal
         });

@@ -5,6 +5,7 @@
   "description": "基于腾讯元宝搜索 (WSA) 的全网多源事实穿透核验助手。浏览器选中文本一键核验、全屏工作过程树、权威交叉仲裁报告与 PDF 下载。",
   "icons": {
     "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
@@ -12,6 +13,7 @@
     "default_popup": "popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     },
@@ -24,7 +26,6 @@
     {
       "matches": ["<all_urls>"],
       "js": ["content.js"],
-      "css": ["content.css"],
       "run_at": "document_end"
     }
   ],

@@ -1,6 +1,10 @@
 // Cloudflare Pages Functions: /api/search
+import { globalQuotaManager } from './quotaManager';
+
 interface Env {
   YUANBAO_API_KEY?: string;
+  QUOTA_KV?: any;
+  KV?: any;
 }
 
 export const onRequestPost: PagesFunction<Env> = async (context) => {
@@ -10,7 +14,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Id, X-Browser-Id',
   };
 
   try {
@@ -29,13 +33,32 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     let clientKey = request.headers.get('Authorization')?.replace(/^Bearer\s+/i, '') || body.apiKey;
     if (clientKey) clientKey = clientKey.replace(/^Bearer\s+/i, '').replace(/^["']|["']$/g, '').trim();
-    const apiKey = clientKey || env.YUANBAO_API_KEY;
+    const serverKey = (env.YUANBAO_API_KEY || '').trim();
+    const isCustomKey = Boolean(clientKey && clientKey !== serverKey);
+    const apiKey = isCustomKey ? clientKey : serverKey;
 
     if (!apiKey) {
       return new Response(JSON.stringify({ error: 'Missing Yuanbao API Key' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    if (!isCustomKey) {
+      const clientIp = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1';
+      const browserId = request.headers.get('x-client-id') || request.headers.get('x-browser-id') || body.clientId || 'default_browser';
+      const kv = env.QUOTA_KV || env.KV;
+      const quotaCheck = await globalQuotaManager.checkAndConsumeSearch(clientIp, browserId, kv);
+      if (!quotaCheck.allowed) {
+        return new Response(JSON.stringify({
+          error: `今日元宝搜索免费额度已达上限 (${quotaCheck.used}/${quotaCheck.limit}次)。您可以在设置中配置自定义 API Key 继续使用。`,
+          code: 'QuotaExceeded',
+          quota: quotaCheck
+        }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json; charset=utf-8' },
+        });
+      }
     }
 
     const yuanbaoRes = await fetch('https://api.wsa.cloud.tencent.com/SearchPro', {
@@ -85,7 +108,7 @@ export const onRequestOptions: PagesFunction = async () => {
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Id, X-Browser-Id',
     },
   });
 };

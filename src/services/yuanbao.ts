@@ -1,4 +1,5 @@
 import { YuanbaoSource, CategorizedAPIError } from '../types';
+import { getBrowserId } from './clientIdentity';
 
 export function classifyYuanbaoError(err: any, statusCode?: number, errorCode?: string): CategorizedAPIError {
   const isTimeout = err?.name === 'AbortError' || err?.message?.includes('超时') || statusCode === 504;
@@ -21,6 +22,16 @@ export function classifyYuanbaoError(err: any, statusCode?: number, errorCode?: 
       message: '元宝搜索鉴权认证失败 (API Key 无效或未授权)',
       userHint: '腾讯云 API Key / SecretId 无效或已欠费冻结，请在设置中检查更新密钥',
       isRetryable: false // 鉴权错误不重试，立即上报避免白等
+    };
+  }
+
+  if (/quotaexceeded|额度已达上限|超出每日免费/i.test(rawMsg)) {
+    return {
+      kind: 'quota_exceeded',
+      statusCode: 429,
+      message: rawMsg || '今日元宝搜索免费额度已达上限 (120次/日)',
+      userHint: '今日公共免费检索额度已用尽，您可以在设置中切换为「自定义 API Key」继续使用',
+      isRetryable: false
     };
   }
 
@@ -103,16 +114,25 @@ export async function searchYuanbao(options: YuanbaoSearchOptions): Promise<Yuan
       let response: Response;
 
       try {
+        const browserId = getBrowserId();
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json; charset=utf-8',
+          'X-Client-Id': browserId,
+          'X-Browser-Id': browserId,
+        };
+        if (cleanApiKey) {
+          headers['Authorization'] = `Bearer ${cleanApiKey}`;
+        }
+
         // 1. Try local dev proxy endpoint first (avoids CORS)
         response = await fetch('/api/search', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json; charset=utf-8',
-            'Authorization': `Bearer ${cleanApiKey}`
-          },
+          headers,
           body: JSON.stringify({
             Query: query.trim(),
-            Cnt: targetCnt
+            Cnt: targetCnt,
+            apiKey: cleanApiKey || undefined,
+            clientId: browserId
           }),
           signal: controller.signal
         });
