@@ -165,8 +165,8 @@ document.addEventListener('DOMContentLoaded', () => {
     yuanbaoApiKey: '',
     useCustomAiKey: false,
     aiApiKey: '',
-    aiBaseUrl: 'https://token.sensenova.cn/v1/chat/completions',
-    aiModel: 'sensenova-6.8-flash-lite',
+    aiBaseUrl: '',
+    aiModel: '',
     proxyUrl: 'https://truthguard.freshmanj.com',
     searchCount: 10,
     lang: 'auto',
@@ -313,11 +313,29 @@ document.addEventListener('DOMContentLoaded', () => {
   // 2. Load Settings from Storage
   chrome.storage.local.get(['truthguard_settings'], (result) => {
     const s = result.truthguard_settings || {};
+    if (s.yuanbaoApiKey && s.yuanbaoApiKey.startsWith('sk-5dc8')) {
+      s.yuanbaoApiKey = '';
+    }
+    if (s.aiApiKey && s.aiApiKey.startsWith('sk-gJD5')) {
+      s.aiApiKey = '';
+    }
+    if (s.aiBaseUrl === 'https://token.sensenova.cn/v1/chat/completions') {
+      s.aiBaseUrl = '';
+    }
+    if (s.aiModel === 'sensenova-6.8-flash-lite') {
+      s.aiModel = '';
+    }
     if (s.proxyUrl === 'https://truthguard-yuanbao.pages.dev') {
       s.proxyUrl = 'https://truthguard.freshmanj.com';
-      chrome.storage.local.set({ truthguard_settings: { ...s } });
+    }
+    if (!s.yuanbaoApiKey) {
+      s.useCustomYuanbaoKey = false;
+    }
+    if (!s.aiApiKey) {
+      s.useCustomAiKey = false;
     }
     currentSettings = { ...currentSettings, ...s };
+    chrome.storage.local.set({ truthguard_settings: { ...currentSettings } });
     if (typeof currentSettings.enableSelectionPill !== 'boolean') {
       currentSettings.enableSelectionPill = true;
     }
@@ -331,8 +349,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     inputYuanbaoKey.value = currentSettings.yuanbaoApiKey || '';
     inputAiKey.value = currentSettings.aiApiKey || '';
-    inputAiUrl.value = currentSettings.aiBaseUrl || 'https://token.sensenova.cn/v1/chat/completions';
-    inputAiModel.value = currentSettings.aiModel || 'sensenova-6.8-flash-lite';
+    inputAiUrl.value = currentSettings.aiBaseUrl || '';
+    inputAiModel.value = currentSettings.aiModel || '';
     inputProxyUrl.value = currentSettings.proxyUrl || 'https://truthguard.freshmanj.com';
 
     applyTranslations(resolveLang(currentSettings.lang));
@@ -492,8 +510,8 @@ document.addEventListener('DOMContentLoaded', () => {
       yuanbaoApiKey: inputYuanbaoKey.value.trim(),
       useCustomAiKey: currentSettings.useCustomAiKey,
       aiApiKey: inputAiKey.value.trim(),
-      aiBaseUrl: inputAiUrl.value.trim() || 'https://token.sensenova.cn/v1/chat/completions',
-      aiModel: inputAiModel.value.trim() || 'sensenova-6.8-flash-lite',
+      aiBaseUrl: inputAiUrl.value.trim(),
+      aiModel: inputAiModel.value.trim(),
       proxyUrl: inputProxyUrl.value.trim() || 'https://truthguard.freshmanj.com',
       searchCount: 10,
       lang: selectLangEl.value || 'auto',

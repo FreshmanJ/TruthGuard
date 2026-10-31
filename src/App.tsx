@@ -76,11 +76,27 @@ export const App: React.FC = () => {
           parsed.reasoningEffort = 'low';
         }
         parsed.searchCount = 10;
-        if (parsed.useCustomYuanbaoKey === undefined) {
-          parsed.useCustomYuanbaoKey = Boolean(parsed.yuanbaoApiKey && parsed.yuanbaoApiKey.trim());
+        if (parsed.aiBaseUrl === 'https://token.sensenova.cn/v1/chat/completions') {
+          parsed.aiBaseUrl = '';
         }
-        if (parsed.useCustomAiKey === undefined) {
-          parsed.useCustomAiKey = Boolean(parsed.aiApiKey && parsed.aiApiKey.trim());
+        if (parsed.aiModel === 'sensenova-6.8-flash-lite') {
+          parsed.aiModel = '';
+        }
+        if (parsed.yuanbaoApiKey && parsed.yuanbaoApiKey.startsWith('sk-5dc8')) {
+          parsed.yuanbaoApiKey = '';
+        }
+        if (parsed.aiApiKey && parsed.aiApiKey.startsWith('sk-gJD5')) {
+          parsed.aiApiKey = '';
+        }
+        if (!parsed.yuanbaoApiKey) {
+          parsed.useCustomYuanbaoKey = false;
+        } else if (parsed.useCustomYuanbaoKey === undefined) {
+          parsed.useCustomYuanbaoKey = true;
+        }
+        if (!parsed.aiApiKey) {
+          parsed.useCustomAiKey = false;
+        } else if (parsed.useCustomAiKey === undefined) {
+          parsed.useCustomAiKey = true;
         }
         return { ...DEFAULT_SETTINGS, ...parsed, searchCount: 10 };
       }

@@ -114,20 +114,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         });
         return;
       }
-      if (!formData.aiBaseUrl.trim()) {
-        setAiTestResult({ 
-          ok: false, 
-          message: lang === 'en' ? 'Please enter AI Base URL' : '请先输入 AI 接口地址 (Base URL)' 
-        });
-        return;
-      }
-      if (!formData.aiModel.trim()) {
-        setAiTestResult({ 
-          ok: false, 
-          message: lang === 'en' ? 'Please enter Model Name' : '请先输入模型名称 (Model)' 
-        });
-        return;
-      }
+
     }
 
     setTestingAI(true);

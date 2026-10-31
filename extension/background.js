@@ -5,8 +5,8 @@ const DEFAULT_SETTINGS = {
   yuanbaoApiKey: '',
   useCustomAiKey: false,
   aiApiKey: '',
-  aiBaseUrl: 'https://token.sensenova.cn/v1/chat/completions',
-  aiModel: 'sensenova-6.8-flash-lite',
+  aiBaseUrl: '',
+  aiModel: '',
   proxyUrl: 'https://truthguard.freshmanj.com',
   searchCount: 10
 };
@@ -63,19 +63,39 @@ function setupContextMenu() {
   });
 }
 
+function sanitizeSettings(s) {
+  if (!s) return { ...DEFAULT_SETTINGS };
+  const updated = { ...DEFAULT_SETTINGS, ...s };
+  if (updated.yuanbaoApiKey && updated.yuanbaoApiKey.startsWith('sk-5dc8')) {
+    updated.yuanbaoApiKey = '';
+  }
+  if (updated.aiApiKey && updated.aiApiKey.startsWith('sk-gJD5')) {
+    updated.aiApiKey = '';
+  }
+  if (updated.aiBaseUrl === 'https://token.sensenova.cn/v1/chat/completions') {
+    updated.aiBaseUrl = '';
+  }
+  if (updated.aiModel === 'sensenova-6.8-flash-lite') {
+    updated.aiModel = '';
+  }
+  if (!updated.yuanbaoApiKey) {
+    updated.useCustomYuanbaoKey = false;
+  }
+  if (!updated.aiApiKey) {
+    updated.useCustomAiKey = false;
+  }
+  if (!updated.proxyUrl || updated.proxyUrl.includes('truthguard-yuanbao.pages.dev')) {
+    updated.proxyUrl = DEFAULT_SETTINGS.proxyUrl;
+  }
+  return updated;
+}
+
 chrome.runtime.onInstalled.addListener(() => {
   setupContextMenu();
 
   chrome.storage.local.get(['truthguard_settings'], (result) => {
-    if (!result.truthguard_settings) {
-      chrome.storage.local.set({ truthguard_settings: DEFAULT_SETTINGS });
-    } else {
-      const s = result.truthguard_settings;
-      if (!s.proxyUrl || s.proxyUrl === 'https://truthguard-yuanbao.pages.dev') {
-        s.proxyUrl = DEFAULT_SETTINGS.proxyUrl;
-        chrome.storage.local.set({ truthguard_settings: s });
-      }
-    }
+    const clean = sanitizeSettings(result.truthguard_settings);
+    chrome.storage.local.set({ truthguard_settings: clean });
   });
 
   console.log('[TruthGuard Extension] Installed & Initialized');
@@ -83,6 +103,12 @@ chrome.runtime.onInstalled.addListener(() => {
 
 chrome.runtime.onStartup.addListener(() => {
   setupContextMenu();
+  chrome.storage.local.get(['truthguard_settings'], (result) => {
+    if (result.truthguard_settings) {
+      const clean = sanitizeSettings(result.truthguard_settings);
+      chrome.storage.local.set({ truthguard_settings: clean });
+    }
+  });
 });
 
 // 2. Handle Context Menu Click
