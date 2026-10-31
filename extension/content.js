@@ -465,19 +465,431 @@
 }
 
 /* Viewport Canvas */
+/* ================= Tree Modal Body Split Layout ================= */
+.tg-tree-modal-body {
+  display: flex !important;
+  flex-direction: row !important;
+  flex: 1 !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+/* Left Canvas Viewport */
 .tg-tree-viewport {
-  flex: 1;
-  min-height: 0;
-  background-color: #fafbfc;
-  background-image: radial-gradient(#e2e8f0 1.2px, transparent 1.2px);
-  background-size: 20px 20px;
-  overflow: hidden;
-  position: relative;
-  cursor: grab;
+  flex: 1 !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  background-color: #fafbfc !important;
+  background-image: radial-gradient(#e2e8f0 1.2px, transparent 1.2px) !important;
+  background-size: 20px 20px !important;
+  overflow: hidden !important;
+  position: relative !important;
+  cursor: grab !important;
 }
 
 .tg-tree-viewport.grabbing {
-  cursor: grabbing;
+  cursor: grabbing !important;
+}
+
+/* ================= Right Live Logs Panel ================= */
+.tg-tree-logs-panel {
+  width: 390px !important;
+  max-width: 36vw !important;
+  min-width: 320px !important;
+  height: 100% !important;
+  background: #ffffff !important;
+  border-left: 1px solid rgba(226, 232, 240, 0.95) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex-shrink: 0 !important;
+  overflow: hidden !important;
+  user-select: text !important;
+  z-index: 10 !important;
+  box-shadow: -4px 0 16px rgba(15, 23, 42, 0.03) !important;
+}
+
+.tg-logs-header {
+  border-bottom: 1px solid #f1f5f9 !important;
+  background: #fafafa !important;
+  padding: 10px 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-shrink: 0 !important;
+  user-select: none !important;
+}
+
+.tg-logs-header-left {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.tg-logs-icon-box {
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 6px !important;
+  background: #f1f5f9 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #059669 !important;
+  flex-shrink: 0 !important;
+}
+
+.tg-logs-title-group {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.tg-logs-title {
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  color: #1e293b !important;
+  letter-spacing: -0.01em !important;
+}
+
+.tg-logs-count {
+  font-size: 11px !important;
+  color: #94a3b8 !important;
+  font-family: ui-monospace, SFMono-Regular, monospace !important;
+}
+
+.tg-logs-header-right {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.tg-logs-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  padding: 2px 8px !important;
+  border-radius: 9999px !important;
+  font-size: 10.5px !important;
+  font-weight: 600 !important;
+  transition: all 0.2s !important;
+  font-family: ui-monospace, monospace !important;
+}
+
+.tg-logs-badge.running {
+  background: #ecfdf5 !important;
+  color: #065f46 !important;
+  border: 1px solid #a7f3d0 !important;
+}
+
+.tg-logs-badge.completed {
+  background: #f1f5f9 !important;
+  color: #64748b !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.tg-logs-badge.aborted {
+  background: #fef2f2 !important;
+  color: #991b1b !important;
+  border: 1px solid #fecaca !important;
+}
+
+.tg-logs-dot {
+  width: 6px !important;
+  height: 6px !important;
+  border-radius: 50% !important;
+  background: #10b981 !important;
+}
+
+.tg-logs-dot.pulse {
+  animation: tgPulse 1.2s infinite !important;
+}
+
+.tg-logs-btn-tool {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  padding: 3px 8px !important;
+  border-radius: 6px !important;
+  border: 1px solid #cbd5e1 !important;
+  background: #ffffff !important;
+  color: #475569 !important;
+  font-size: 10.5px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.15s !important;
+  user-select: none !important;
+}
+
+.tg-logs-btn-tool:hover {
+  background: #f8fafc !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+}
+
+.tg-logs-btn-tool.active {
+  background: #ecfdf5 !important;
+  border-color: #a7f3d0 !important;
+  color: #065f46 !important;
+  font-weight: 600 !important;
+}
+
+.tg-logs-stream {
+  flex: 1 !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 12px !important;
+  background: #f8fafc !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  scroll-behavior: smooth !important;
+}
+
+.tg-logs-stream::-webkit-scrollbar {
+  width: 5px !important;
+}
+.tg-logs-stream::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+.tg-logs-stream::-webkit-scrollbar-thumb {
+  background: #cbd5e1 !important;
+  border-radius: 3px !important;
+}
+.tg-logs-stream::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8 !important;
+}
+
+.tg-logs-empty {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 100% !important;
+  min-height: 200px !important;
+  text-align: center !important;
+  padding: 24px !important;
+  color: #94a3b8 !important;
+}
+
+.tg-logs-empty-icon {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 10px !important;
+  background: #f1f5f9 !important;
+  display: flex !align-items: center !important;
+  justify-content: center !important;
+  color: #94a3b8 !important;
+  margin-bottom: 10px !important;
+}
+
+.tg-logs-empty-title {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: #475569 !important;
+}
+
+.tg-logs-empty-desc {
+  font-size: 11px !important;
+  color: #94a3b8 !important;
+  margin-top: 4px !important;
+  line-height: 1.5 !important;
+  max-width: 240px !important;
+}
+
+.tg-log-item {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 7px !important;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  padding: 7px 10px !important;
+  font-size: 11px !important;
+  line-height: 1.45 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+  transition: border-color 0.15s, box-shadow 0.15s !important;
+  word-break: break-word !important;
+}
+
+.tg-log-item:hover {
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04);
+}
+
+.tg-log-item.extract {
+  border-left: 3px solid #10b981 !important;
+}
+
+.tg-log-item.search {
+  border-left: 3px solid #06b6d4 !important;
+}
+
+.tg-log-item.success {
+  border-left: 3px solid #059669 !important;
+  background: #fcfffd !important;
+}
+
+.tg-log-item.warn {
+  border-left: 3px solid #f59e0b !important;
+  background: #fffdf5 !important;
+  border-color: #fde68a !important;
+}
+
+.tg-log-item.error {
+  border-left: 3px solid #ef4444 !important;
+  background: #fff8f8 !important;
+  border-color: #fca5a5 !important;
+}
+
+.tg-log-time {
+  font-family: ui-monospace, SFMono-Regular, monospace !important;
+  font-size: 10px !important;
+  color: #94a3b8 !important;
+  flex-shrink: 0 !important;
+  padding-top: 1.5px !important;
+  user-select: none !important;
+}
+
+.tg-log-tag {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  font-size: 9.5px !important;
+  font-weight: 700 !important;
+  padding: 1px 5px !important;
+  border-radius: 4px !important;
+  flex-shrink: 0 !important;
+  user-select: none !important;
+  line-height: 1.3 !important;
+}
+
+.tg-log-tag.extract {
+  background: #ecfdf5 !important;
+  color: #047857 !important;
+  border: 1px solid #a7f3d0 !important;
+}
+
+.tg-log-tag.search {
+  background: #ecfeff !important;
+  color: #0e7490 !important;
+  border: 1px solid #a5f3fc !important;
+}
+
+.tg-log-tag.success {
+  background: #dcfce7 !important;
+  color: #15803d !important;
+  border: 1px solid #86efac !important;
+}
+
+.tg-log-tag.warn {
+  background: #fef3c7 !important;
+  color: #b45309 !important;
+  border: 1px solid #fde68a !important;
+}
+
+.tg-log-tag.error {
+  background: #fee2e2 !important;
+  color: #b91c1c !important;
+  border: 1px solid #fca5a5 !important;
+}
+
+.tg-log-tag.info {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.tg-log-tag.thinking {
+  background: #faf5ff !important;
+  color: #7e22ce !important;
+  border: 1px solid #e9d5ff !important;
+}
+
+.tg-log-message {
+  flex: 1 !important;
+  min-width: 0 !important;
+  color: #1e293b !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  font-size: 11.5px !important;
+}
+
+.tg-log-thinking-card {
+  border-radius: 8px !important;
+  border: 1px solid #e9d5ff !important;
+  background: #fbf8ff !important;
+  padding: 6px 10px !important;
+  font-size: 11px !important;
+  transition: all 0.2s !important;
+}
+
+.tg-log-thinking-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  cursor: pointer !important;
+  user-select: none !important;
+}
+
+.tg-log-thinking-left {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  min-width: 0 !important;
+  flex: 1 !important;
+}
+
+.tg-log-thinking-summary {
+  font-size: 11px !important;
+  color: #581c87 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  font-family: ui-monospace, monospace !important;
+}
+
+.tg-log-thinking-toggle {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  background: #f3e8ff !important;
+  border: 1px solid #e9d5ff !important;
+  color: #7e22ce !important;
+  border-radius: 4px !important;
+  padding: 2px 6px !important;
+  font-size: 10px !important;
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
+}
+
+.tg-log-thinking-body {
+  margin-top: 6px !important;
+  border-top: 1px dashed #e9d5ff !important;
+  padding-top: 6px !important;
+  max-height: 160px !important;
+  overflow-y: auto !important;
+  font-family: ui-monospace, SFMono-Regular, monospace !important;
+  font-size: 10.5px !important;
+  color: #4a044e !important;
+  line-height: 1.5 !important;
+  white-space: pre-wrap !important;
+  user-select: text !important;
+}
+
+.tg-logs-footer {
+  border-top: 1px solid #f1f5f9 !important;
+  background: #ffffff !important;
+  padding: 6px 12px !important;
+  font-size: 10px !important;
+  color: #94a3b8 !important;
+  font-family: ui-monospace, SFMono-Regular, monospace !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  flex-shrink: 0 !important;
+  user-select: none !important;
 }
 
 .tg-tree-world {
@@ -935,7 +1347,30 @@
       treeZoomReset: '适应',
       treeBtnReport: '查看审计报告',
       treeBtnCollapse: '收起为浮窗',
-      treeBtnClose: '关闭',
+            treeBtnClose: '关闭',
+      logsTitle: '实时工作流水日志',
+      logsCountUnit: '条',
+      logsStatusRunning: '执行中',
+      logsStatusCompleted: '全流水已就绪',
+      logsStatusAborted: '异常中断',
+      logsAutoScroll: '自动滚屏',
+      logsAutoScrollShort: '自动滚屏',
+      logsAutoScrollOn: '开',
+      logsAutoScrollOff: '关',
+      logsEmptyTitle: '等待启动事实核验流水...',
+      logsEmptyDesc: '划选文本核验后，将在此透传语义拆解、元宝多源检索与大模型交叉裁决日志',
+      logsFooterLeft: '腾讯元宝 WSA 权威信源直通',
+      logsFooterRight: '双核事实交叉仲裁流水',
+      tagInspect: '格式预检',
+      tagExtract: '语义拆解',
+      tagSearch: '元宝检索',
+      tagSuccess: '权威证实',
+      tagWarn: '时效存疑',
+      tagError: '事实辟谣',
+      tagThinking: '深度思考',
+      tagInfo: '系统信息',
+      logsExpand: '展开',
+      logsCollapse: '收起',
       rootNodeBadge: 'Root 根节点 · 命题拆解',
       rootNodeTitle: '文本语义长程拆解',
       rootNodeDesc: '深度剖析原稿内容，剥离主观修饰，提炼可证伪事实命题',
@@ -1025,7 +1460,30 @@
       treeZoomReset: 'Fit',
       treeBtnReport: 'Audit Report',
       treeBtnCollapse: 'Dock',
-      treeBtnClose: 'Close',
+            treeBtnClose: 'Close',
+      logsTitle: 'Live Workflow Logs',
+      logsCountUnit: 'logs',
+      logsStatusRunning: 'Running',
+      logsStatusCompleted: 'Completed',
+      logsStatusAborted: 'Aborted',
+      logsAutoScroll: 'Auto-Scroll',
+      logsAutoScrollShort: 'Auto-Scroll',
+      logsAutoScrollOn: 'ON',
+      logsAutoScrollOff: 'OFF',
+      logsEmptyTitle: 'Awaiting verification stream...',
+      logsEmptyDesc: 'Once started, claim extraction, Yuanbao search, and arbitration logs will stream here.',
+      logsFooterLeft: 'Tencent WSA Direct Stream',
+      logsFooterRight: 'Dual-Engine Arbitration',
+      tagInspect: 'Inspect',
+      tagExtract: 'Extract',
+      tagSearch: 'Yuanbao',
+      tagSuccess: 'Verified',
+      tagWarn: 'Disputed',
+      tagError: 'Refuted',
+      tagThinking: 'Thinking',
+      tagInfo: 'Info',
+      logsExpand: 'Expand',
+      logsCollapse: 'Collapse',
       rootNodeBadge: 'Root Node · Claim Extraction',
       rootNodeTitle: 'Objective Claim Extraction',
       rootNodeDesc: 'Extracts falsifiable factual propositions and neutral search probes',
@@ -1143,6 +1601,9 @@
     searchTasks: [],
     arbitrationTasks: [],
     summary: null,
+    logs: [],
+    autoScrollLogs: true,
+    expandedThinkingIds: new Set(),
     isDockVisible: false,
     isTreeOpen: false,
     isReportOpen: false,
@@ -1159,13 +1620,168 @@
     tree: `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"/><circle cx="6" cy="19" r="3"/><circle cx="18" cy="19" r="3"/><path d="M12 8v4"/><path d="m6 16 6-4 6 4"/></svg>`,
     report: `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`,
     download: `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`,
-    close: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
+        close: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
+    terminal: `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>`,
+    arrowDown: `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>`,
+    brain: `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-2.04"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-2.04"/></svg>`,
+    chevronDown: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`,
+    chevronUp: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>`,
     gavel: `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14 13-7.5 7.5a2.12 2.12 0 1 1-3-3L11 10"/><path d="m16 16 6-6"/><path d="m8 8 6-6"/><path d="m9 7 8 8"/><path d="m21 11-8-8"/></svg>`,
     globe: `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`,
     check: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
     sparkles: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>`,
     github: `<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>`
   };
+  
+  // ================= Live Workflow Logs Helper System =================
+  function getNowTimeString() {
+    const now = new Date();
+    return [
+      String(now.getHours()).padStart(2, '0'),
+      String(now.getMinutes()).padStart(2, '0'),
+      String(now.getSeconds()).padStart(2, '0')
+    ].join(':');
+  }
+
+  function addLog(message, type = 'info', errorKind = null, extra = {}) {
+    const logItem = {
+      id: 'log_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+      time: getNowTimeString(),
+      stage: state.stage,
+      message,
+      type,
+      errorKind,
+      ...extra
+    };
+
+    state.logs.push(logItem);
+    appendLogToDOM(logItem);
+    updateLogsHeaderBadge();
+  }
+
+  function renderLogItemHtml(log, lang) {
+    const tagText = log.type === 'extract'
+      ? getI18n('tagExtract', lang)
+      : log.type === 'search'
+      ? getI18n('tagSearch', lang)
+      : log.type === 'success'
+      ? getI18n('tagSuccess', lang)
+      : log.type === 'warn'
+      ? getI18n('tagWarn', lang)
+      : log.type === 'error'
+      ? getI18n('tagError', lang)
+      : log.type === 'thinking'
+      ? getI18n('tagThinking', lang)
+      : getI18n('tagInfo', lang);
+
+    const tagIcon = log.type === 'extract'
+      ? ICONS.sparkles
+      : log.type === 'search'
+      ? ICONS.globe
+      : log.type === 'success'
+      ? ICONS.check
+      : log.type === 'thinking'
+      ? ICONS.brain
+      : '';
+
+    if (log.isThinking || log.type === 'thinking') {
+      const isExpanded = state.expandedThinkingIds.has(log.id);
+      return `
+        <div class="tg-log-thinking-card ${isExpanded ? 'expanded' : ''}" id="${log.id}">
+          <div class="tg-log-thinking-header" data-toggle-thinking="${log.id}">
+            <div class="tg-log-thinking-left">
+              <span class="tg-log-time">${log.time}</span>
+              <span class="tg-log-tag thinking">
+                ${tagIcon} <span>${escapeHtml(tagText)}</span>
+              </span>
+              <span class="tg-log-thinking-summary">${escapeHtml(log.message)}</span>
+            </div>
+            <button type="button" class="tg-log-thinking-toggle" data-toggle-thinking="${log.id}">
+              <span>${isExpanded ? escapeHtml(getI18n('logsCollapse', lang)) : escapeHtml(getI18n('logsExpand', lang))}</span>
+              ${isExpanded ? ICONS.chevronUp : ICONS.chevronDown}
+            </button>
+          </div>
+          ${isExpanded ? `
+            <div class="tg-log-thinking-body">
+              ${escapeHtml(log.fullReasoning || log.message)}
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    return `
+      <div class="tg-log-item ${log.type} ${log.errorKind || ''}" id="${log.id}">
+        <span class="tg-log-time">${log.time}</span>
+        <span class="tg-log-tag ${log.type}">
+          ${tagIcon ? `<span style="display:inline-flex;align-items:center;">${tagIcon}</span>` : ''}
+          <span>${escapeHtml(tagText)}</span>
+        </span>
+        <span class="tg-log-message">${escapeHtml(log.message)}</span>
+      </div>
+    `;
+  }
+
+  function appendLogToDOM(logItem) {
+    const stream = shadow.getElementById('tg-logs-stream');
+    if (!stream) return;
+
+    // Remove empty placeholder if any
+    const empty = stream.querySelector('.tg-logs-empty');
+    if (empty) empty.remove();
+
+    const lang = state.lang || 'zh';
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = renderLogItemHtml(logItem, lang);
+    const newEl = tempDiv.firstElementChild;
+    if (newEl) {
+      stream.appendChild(newEl);
+      const toggles = newEl.querySelectorAll('[data-toggle-thinking]');
+      toggles.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const id = btn.getAttribute('data-toggle-thinking');
+          if (state.expandedThinkingIds.has(id)) {
+            state.expandedThinkingIds.delete(id);
+          } else {
+            state.expandedThinkingIds.add(id);
+          }
+          renderTreeUI();
+        });
+      });
+    }
+
+    const countEl = shadow.getElementById('tg-logs-count');
+    if (countEl) {
+      countEl.textContent = `• ${state.logs.length} ${getI18n('logsCountUnit', lang)}`;
+    }
+
+    if (state.autoScrollLogs) {
+      stream.scrollTop = stream.scrollHeight;
+    }
+  }
+
+  function updateLogsHeaderBadge() {
+    const badge = shadow.getElementById('tg-logs-stage-badge');
+    const badgeText = shadow.getElementById('tg-logs-badge-text');
+    if (!badge || !badgeText) return;
+
+    const lang = state.lang || 'zh';
+    const isRunning = state.stage !== 'idle' && state.stage !== 'completed' && state.stage !== 'aborted';
+
+    if (isRunning) {
+      badge.className = 'tg-logs-badge running';
+      const sec = (state.elapsedMs / 1000).toFixed(1);
+      badgeText.textContent = `${getI18n('logsStatusRunning', lang)} ${sec}s`;
+    } else if (state.stage === 'completed') {
+      badge.className = 'tg-logs-badge completed';
+      badgeText.textContent = getI18n('logsStatusCompleted', lang);
+    } else if (state.stage === 'aborted') {
+      badge.className = 'tg-logs-badge aborted';
+      badgeText.textContent = getI18n('logsStatusAborted', lang);
+    }
+  }
+
   // ================= 2. Selection Detection & Trigger Pill =================
   let selectionPill = null;
   let activeSelectedText = '';
@@ -1385,10 +2001,12 @@
     state.elapsedMs = 0;
     state.lang = resolveContentLang(cachedSettings, state.selectedText);
     state.progressMessage = getI18n('rootNodeSplitting', state.lang);
+    addLog(state.lang === 'en' ? 'Starting factual verification pipeline. Extracting claims...' : '启动事实审校流程，正在分析文本并拆解客观可证伪命题...', 'extract');
     state.claims = [];
     state.searchTasks = [];
     state.arbitrationTasks = [];
     state.summary = null;
+    state.logs = [];
     state.isDockVisible = true;
     state.isReportOpen = false;
     state.startTime = Date.now();
@@ -1420,11 +2038,21 @@
       // 3.2 Extract Claims
       const rawClaims = await extractClaimsStep(content, settings);
       state.claims = rawClaims;
+      if (rawClaims.length > 0) {
+        rawClaims.forEach((c, idx) => {
+          addLog(state.lang === 'en' ? `[Branch #${idx + 1}] Claim: "${c.claimText}" -> Search Probe: "${c.searchKeyword}"` : `[分支 #${idx + 1}] 提取命题：“${c.claimText}” -> 检索探针：“${c.searchKeyword}”`, 'extract');
+        });
+        addLog(state.lang === 'en' ? `Extracted ${rawClaims.length} branches. Querying Tencent Yuanbao Search...` : `成功提取 ${rawClaims.length} 个独立事实分支，即将并发调度腾讯元宝搜索 (WSA)...`, 'info');
+      } else {
+        addLog(state.lang === 'en' ? 'No falsifiable factual claims detected in text.' : '未在选中文本中检测到可证伪的客观事实断言。', 'info');
+      }
 
       if (rawClaims.length === 0) {
         state.stage = 'completed';
         state.progressMessage = getI18n('noClaimsDetected', state.lang);
-        finishPipeline();
+        addLog(state.lang === 'en' ? `[Synthesis Profile] Aggregated all branch evidence. Comprehensive health score: ${healthScore}%.` : `[事实审计画像] 聚合全部分支证据链，综合健康度得分：${healthScore} 分。`, 'success');
+      addLog(state.lang === 'en' ? 'Fact-checking pipeline converged. Audit report is ready to view or download as PDF.' : '全链路事实核验已收敛，审计报告生成完毕，可随时查看或导出高清 PDF。', 'info');
+      finishPipeline();
         return;
       }
 
@@ -1506,6 +2134,7 @@
           state.searchTasks[i].sourcesCount = sources.length;
           state.searchTasks[i].topSites = Array.from(new Set(sources.map(s => s.site))).slice(0, 2);
           sourcesMap.set(c.id, sources);
+          addLog(state.lang === 'en' ? `[Branch #${i + 1} Search Done] Latency: ${state.searchTasks[i].latencyMs}ms, retrieved ${sources.length} passages. Top: ${state.searchTasks[i].topSites.join(', ') || 'Authoritative Media'}` : `[分支 #${i + 1} 元宝检索完成] 耗时 ${state.searchTasks[i].latencyMs}ms，召回 ${sources.length} 篇权威段落，核心信源：${state.searchTasks[i].topSites.join('、') || '权威官方媒体'}`, 'search');
 
           const doneCount = state.searchTasks.filter(t => t.status === 'done').length;
           const sitesStr = state.searchTasks[i].topSites.join(state.lang === 'en' ? ', ' : '、');
@@ -1539,6 +2168,13 @@
           state.arbitrationTasks[i].verdict = claimVerdict.status;
           state.arbitrationTasks[i].confidence = claimVerdict.confidence;
           state.arbitrationTasks[i].reasoning = claimVerdict.reasoning;
+          if (claimVerdict.status === 'verified') {
+            addLog(state.lang === 'en' ? `[Branch #${i + 1} Verdict] 🟢 Verified (Confidence ${claimVerdict.confidence}%): ${claimVerdict.reasoning || 'Corroborated by sources'}` : `[分支 #${i + 1} 裁决结论] 🟢 权威证实 (置信度 ${claimVerdict.confidence}%)：${claimVerdict.reasoning || '证据链印证吻合'}`, 'success');
+          } else if (claimVerdict.status === 'disputed') {
+            addLog(state.lang === 'en' ? `[Branch #${i + 1} Verdict] 🟡 Disputed (Confidence ${claimVerdict.confidence}%): ${claimVerdict.reasoning || 'Discrepancies found across sources'}` : `[分支 #${i + 1} 裁决结论] 🟡 存疑/时效差异 (置信度 ${claimVerdict.confidence}%)：${claimVerdict.reasoning || '存在时效或信源报道差异'}`, 'warn');
+          } else {
+            addLog(state.lang === 'en' ? `[Branch #${i + 1} Verdict] 🔴 Refuted (Confidence ${claimVerdict.confidence}%): ${claimVerdict.reasoning || 'Contradicted by authoritative evidence'}` : `[分支 #${i + 1} 裁决结论] 🔴 事实辟谣/错误 (置信度 ${claimVerdict.confidence}%)：${claimVerdict.reasoning || '官方信源证实与原文不符'}`, 'error');
+          }
 
           const doneArbCount = state.arbitrationTasks.filter(t => t.status === 'done').length;
           const verdictStr = claimVerdict.status === 'verified'
@@ -1590,6 +2226,7 @@
 
     } catch (err) {
       console.error('TruthGuard pipeline error:', err);
+      addLog(state.lang === 'en' ? `Verification aborted: ${err.message}` : `核验异常中断: ${err.message}`, 'error');
       state.stage = 'aborted';
       state.progressMessage = getI18n('errorAborted', state.lang, { msg: err.message || (state.lang === 'en' ? 'Connection failed' : '网络连接失败') });
       if (state.timerInterval) clearInterval(state.timerInterval);
@@ -1610,9 +2247,8 @@
   // Claim Extractor Step
   async function extractClaimsStep(content, settings) {
     const isEn = settings?.lang === 'en' || !/[\u4e00-\u9fa5]/.test(content);
-    // 1. Try AI extraction via background
-    if (settings?.aiApiKey) {
-      try {
+    // 1. Try real LLM extraction via background service worker
+    try {
         const prompt = isEn
           ? `You are an elite scientific and technical fact-checking investigator.
 From the following text, extract 1 to 4 core, objective, falsifiable factual claims.
@@ -1663,7 +2299,6 @@ Input text: """${content}"""`
       } catch (e) {
         console.warn('AI extraction failed, using heuristic rules:', e);
       }
-    }
 
     // 2. High-precision heuristic fallback extraction
     return fallbackExtractClaims(content, isEn);
@@ -1820,9 +2455,8 @@ ${evidenceText || '（暂无直接外部证据）'}
   "correction": null
 }`;
 
-    // 1. Try real LLM arbitration
-    if (settings?.aiApiKey) {
-      try {
+    // 1. Try real LLM arbitration via background service worker
+    try {
         const aiRes = await new Promise((resolve) => {
           chrome.runtime.sendMessage({
             type: 'TRUTHGUARD_AI_REQUEST',
@@ -1874,7 +2508,6 @@ ${evidenceText || '（暂无直接外部证据）'}
       } catch (err) {
         console.warn('[TruthGuard] AI arbitration call failed, using intelligent evidence fallback:', err);
       }
-    }
 
     // 2. Intelligent Evidence Fallback (if AI unreachable or network drops)
     let fallbackStatus = 'verified';
@@ -2198,8 +2831,10 @@ ${evidenceText || '（暂无直接外部证据）'}
           </div>
         </div>
 
-        <!-- Interactive Canvas Viewport -->
-        <div id="tg-tree-viewport" class="tg-tree-viewport">
+        <!-- Modal Body: Left Tree Canvas + Right Live Logs Panel -->
+        <div class="tg-tree-modal-body">
+          <!-- Left: Interactive Canvas Viewport -->
+          <div id="tg-tree-viewport" class="tg-tree-viewport">
           <div id="tg-tree-world" class="tg-tree-world" style="transform: translate(${state.treeTransform.x}px, ${state.treeTransform.y}px) scale(${state.treeTransform.scale});">
             
             <!-- 1. ROOT NODE: 文本语义长程拆解 -->
@@ -2378,12 +3013,94 @@ ${evidenceText || '（暂无直接外部证据）'}
             ` : ''}
 
           </div>
+          </div>
+
+          <!-- Right: Live Logs Panel (Split region) -->
+          <div id="tg-tree-logs-panel" class="tg-tree-logs-panel">
+            <!-- 1. Logs Header -->
+            <div class="tg-logs-header">
+              <div class="tg-logs-header-left">
+                <div class="tg-logs-icon-box">
+                  ${ICONS.terminal}
+                </div>
+                <div class="tg-logs-title-group">
+                  <span class="tg-logs-title">${escapeHtml(getI18n('logsTitle', lang))}</span>
+                  <span class="tg-logs-count" id="tg-logs-count">• ${state.logs.length} ${escapeHtml(getI18n('logsCountUnit', lang))}</span>
+                </div>
+              </div>
+              <div class="tg-logs-header-right">
+                <span id="tg-logs-stage-badge" class="tg-logs-badge ${!isCompleted && state.stage !== 'idle' && state.stage !== 'aborted' ? 'running' : state.stage === 'aborted' ? 'aborted' : 'completed'}">
+                  <span class="tg-logs-dot ${!isCompleted && state.stage !== 'idle' && state.stage !== 'aborted' ? 'pulse' : ''}"></span>
+                  <span id="tg-logs-badge-text">
+                    ${!isCompleted && state.stage !== 'idle' && state.stage !== 'aborted' ? `${escapeHtml(getI18n('logsStatusRunning', lang))} ${elapsedStr}` : state.stage === 'aborted' ? escapeHtml(getI18n('logsStatusAborted', lang)) : escapeHtml(getI18n('logsStatusCompleted', lang))}
+                  </span>
+                </span>
+                <button id="tg-btn-logs-autoscroll" class="tg-logs-btn-tool ${state.autoScrollLogs ? 'active' : ''}" title="${escapeHtml(getI18n('logsAutoScroll', lang))}">
+                  ${ICONS.arrowDown}
+                  <span>${escapeHtml(getI18n('logsAutoScrollShort', lang))} ${state.autoScrollLogs ? escapeHtml(getI18n('logsAutoScrollOn', lang)) : escapeHtml(getI18n('logsAutoScrollOff', lang))}</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- 2. Scrollable Logs Stream -->
+            <div id="tg-logs-stream" class="tg-logs-stream">
+              ${state.logs.length === 0 ? `
+                <div class="tg-logs-empty">
+                  <div class="tg-logs-empty-icon">${ICONS.terminal}</div>
+                  <div class="tg-logs-empty-title">${escapeHtml(getI18n('logsEmptyTitle', lang))}</div>
+                  <div class="tg-logs-empty-desc">${escapeHtml(getI18n('logsEmptyDesc', lang))}</div>
+                </div>
+              ` : state.logs.map(log => renderLogItemHtml(log, lang)).join('')}
+            </div>
+
+            <!-- 3. Logs Footer -->
+            <div class="tg-logs-footer">
+              <span>${escapeHtml(getI18n('logsFooterLeft', lang))}</span>
+              <span>${escapeHtml(getI18n('logsFooterRight', lang))}</span>
+            </div>
+          </div>
         </div>
       </div>
     `;
 
     // Setup interactive Pan & Zoom for Tree Viewport
     setupTreePanAndZoom();
+
+    // Auto-scroll toggle listener
+    shadow.getElementById('tg-btn-logs-autoscroll')?.addEventListener('click', () => {
+      state.autoScrollLogs = !state.autoScrollLogs;
+      const btn = shadow.getElementById('tg-btn-logs-autoscroll');
+      if (btn) {
+        btn.className = `tg-logs-btn-tool ${state.autoScrollLogs ? 'active' : ''}`;
+        btn.innerHTML = `${ICONS.arrowDown} <span>${escapeHtml(getI18n('logsAutoScrollShort', lang))} ${state.autoScrollLogs ? escapeHtml(getI18n('logsAutoScrollOn', lang)) : escapeHtml(getI18n('logsAutoScrollOff', lang))}</span>`;
+      }
+      if (state.autoScrollLogs) {
+        const stream = shadow.getElementById('tg-logs-stream');
+        if (stream) stream.scrollTop = stream.scrollHeight;
+      }
+    });
+
+    // Thinking toggle delegate listener
+    shadow.getElementById('tg-logs-stream')?.addEventListener('click', (e) => {
+      const toggleBtn = e.target.closest('[data-toggle-thinking]');
+      if (toggleBtn) {
+        const id = toggleBtn.getAttribute('data-toggle-thinking');
+        if (state.expandedThinkingIds.has(id)) {
+          state.expandedThinkingIds.delete(id);
+        } else {
+          state.expandedThinkingIds.add(id);
+        }
+        renderTreeUI();
+      }
+    });
+
+    // Scroll to bottom if autoscroll is enabled
+    if (state.autoScrollLogs) {
+      setTimeout(() => {
+        const stream = shadow.getElementById('tg-logs-stream');
+        if (stream) stream.scrollTop = stream.scrollHeight;
+      }, 50);
+    }
 
     // Event listeners
     shadow.getElementById('tg-btn-collapse-tree')?.addEventListener('click', () => {

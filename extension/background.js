@@ -1,5 +1,10 @@
 // TruthGuard Browser Extension Background Service Worker (Manifest V3)
 
+const BUILTIN_YUANBAO_KEY = 'sk-5dc82711e58875020bb0157c75d1456879ae';
+const BUILTIN_AI_KEY = 'sk-gJD5vz3wDqYDpTf5NzUyfhBhR9NLObd9';
+const BUILTIN_AI_URL = 'https://token.sensenova.cn/v1/chat/completions';
+const BUILTIN_AI_MODEL = 'sensenova-6.8-flash-lite';
+
 const DEFAULT_SETTINGS = {
   useCustomYuanbaoKey: false,
   yuanbaoApiKey: '',
@@ -230,75 +235,64 @@ async function handleSearchRequest({ query, cnt = 10, apiKey, proxyUrl, useCusto
   const rawCnt = Number(cnt || 10);
   const targetCnt = [10, 20, 30, 40, 50].includes(rawCnt) ? rawCnt : 10;
 
-  // 1. Custom Key Mode -> Bypass daily public limit
+  // 1. Custom Key Mode -> Direct to official Tencent WSA SearchPro
   if (useCustomYuanbaoKey && apiKey && apiKey.trim()) {
     const cleanApiKey = apiKey.trim().replace(/^Bearer\s+/i, '');
+    return await executeDirectYuanbaoSearch(query, targetCnt, cleanApiKey);
+  }
 
-    // Attempt proxy first
+  // 2. Local Proxy Mode if explicitly requested and reachable
+  if (proxyUrl && proxyUrl.includes('localhost')) {
     try {
-      const proxyRes = await fetchWithProxyFallback('/api/search', {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 1800);
+      const proxyRes = await fetch(`${proxyUrl.replace(/\/+$/, '')}/api/search`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${cleanApiKey}`,
+          'X-Client-Id': browserId,
           'X-Browser-Id': browserId
         },
-        body: JSON.stringify({ Query: query, Cnt: targetCnt, apiKey: cleanApiKey })
-      }, proxyUrl);
+        body: JSON.stringify({ Query: query, Cnt: targetCnt, clientId: browserId }),
+        signal: controller.signal
+      });
+      clearTimeout(timer);
       if (proxyRes.ok) {
-        const data = await proxyRes.json();
-        return parseYuanbaoPages(data);
+        const resJson = await proxyRes.json();
+        const pages = parseYuanbaoPages(resJson);
+        if (pages.length > 0) return pages;
       }
     } catch (e) {
-      console.warn('[TruthGuard Background] Proxy custom search failed, using direct cloud API:', e.message);
+      console.warn('[TruthGuard Background] Local proxy search unreachable, failover to official cloud API:', e.message);
     }
-
-    // Direct Cloud API fallback
-    const directRes = await fetch('https://api.wsa.cloud.tencent.com/SearchPro', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${cleanApiKey}`
-      },
-      body: JSON.stringify({ Query: query, Cnt: targetCnt })
-    });
-
-    if (!directRes.ok) {
-      const errText = await directRes.text();
-      throw new Error(`元宝搜索调用失败 (${directRes.status}): ${errText.slice(0, 100)}`);
-    }
-
-    const directData = await directRes.json();
-    if (directData?.Response?.Error) {
-      throw new Error(`元宝搜索服务报错: ${directData.Response.Error.Message || directData.Response.Error.Code}`);
-    }
-
-    return parseYuanbaoPages(directData);
   }
 
-  // 2. Default Public Service -> Enforce 120 daily limit via Backend Proxy
-  const proxyRes = await fetchWithProxyFallback('/api/search', {
+  // 3. Default Direct to Tencent Cloud WSA SearchPro API
+  return await executeDirectYuanbaoSearch(query, targetCnt, BUILTIN_YUANBAO_KEY);
+}
+
+async function executeDirectYuanbaoSearch(query, cnt, apiKey) {
+  const cleanApiKey = apiKey.trim().replace(/^Bearer\s+/i, '');
+  const directRes = await fetch('https://api.wsa.cloud.tencent.com/SearchPro', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-Client-Id': browserId,
-      'X-Browser-Id': browserId
+      'Authorization': `Bearer ${cleanApiKey}`
     },
-    body: JSON.stringify({ Query: query, Cnt: targetCnt, clientId: browserId })
-  }, proxyUrl);
+    body: JSON.stringify({ Query: query, Cnt: cnt })
+  });
 
-  const resText = await proxyRes.text();
-  let resJson = {};
-  try { resJson = JSON.parse(resText); } catch {}
-
-  if (!proxyRes.ok) {
-    if (proxyRes.status === 429) {
-      throw new Error(resJson.error || '今日元宝搜索免费额度已达上限 (120次/日)。请在插件设置中配置自定义 API Key。');
-    }
-    throw new Error(resJson.error || resJson.Response?.Error?.Message || `元宝搜索调用失败 (${proxyRes.status})`);
+  if (!directRes.ok) {
+    const errText = await directRes.text();
+    throw new Error(`元宝搜索调用失败 (${directRes.status}): ${errText.slice(0, 100)}`);
   }
 
-  return parseYuanbaoPages(resJson);
+  const directData = await directRes.json();
+  if (directData?.Response?.Error) {
+    throw new Error(`元宝搜索服务报错: ${directData.Response.Error.Message || directData.Response.Error.Code}`);
+  }
+
+  return parseYuanbaoPages(directData);
 }
 
 function parseYuanbaoPages(data) {
@@ -339,63 +333,77 @@ function parseYuanbaoPages(data) {
 async function handleAIRequest({ messages, apiKey, baseUrl: aiBaseUrl, model, proxyUrl, useCustomAiKey }) {
   const browserId = await getBrowserId();
 
-  // 1. Custom Key Mode -> Bypass daily public limit
+  // 1. Custom Key Mode -> Direct to specified custom endpoint
   if (useCustomAiKey && apiKey && apiKey.trim()) {
     const cleanApiKey = apiKey.trim().replace(/^Bearer\s+/i, '');
-    let targetUrl = (aiBaseUrl || 'https://token.sensenova.cn/v1/chat/completions').trim();
+    let targetUrl = (aiBaseUrl || BUILTIN_AI_URL).trim();
     if (!targetUrl.endsWith('/chat/completions') && !targetUrl.includes('/chat/completions')) {
       targetUrl = targetUrl.replace(/\/+$/, '') + '/chat/completions';
     }
-
-    const directRes = await fetch(targetUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${cleanApiKey}`
-      },
-      body: JSON.stringify({
-        model: model || 'sensenova-6.8-flash-lite',
-        messages,
-        temperature: 0.1,
-        stream: false
-      })
-    });
-
-    if (!directRes.ok) {
-      const errText = await directRes.text();
-      throw new Error(`AI 服务响应异常 (${directRes.status}): ${errText.slice(0, 100)}`);
-    }
-
-    const directData = await directRes.json();
-    return directData?.choices?.[0]?.message?.content || '';
+    const targetModel = model || BUILTIN_AI_MODEL;
+    return await executeDirectAI(targetUrl, cleanApiKey, targetModel, messages);
   }
 
-  // 2. Default Public Service -> Enforce 300 daily limit via Backend Proxy
-  const proxyRes = await fetchWithProxyFallback('/api/ai', {
+  // 2. Local Proxy Mode if explicitly requested and reachable
+  if (proxyUrl && proxyUrl.includes('localhost')) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 1800);
+      const proxyRes = await fetch(`${proxyUrl.replace(/\/+$/, '')}/api/ai`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Client-Id': browserId,
+          'X-Browser-Id': browserId
+        },
+        body: JSON.stringify({
+          messages,
+          stream: false,
+          temperature: 0.1,
+          clientId: browserId
+        }),
+        signal: controller.signal
+      });
+      clearTimeout(timer);
+      if (proxyRes.ok) {
+        const resJson = await proxyRes.json();
+        const content = resJson?.choices?.[0]?.message?.content;
+        if (content) return content;
+      }
+    } catch (e) {
+      console.warn('[TruthGuard Background] Local proxy AI unreachable, failover to official cloud AI:', e.message);
+    }
+  }
+
+  // 3. Default Direct to SenseNova Cloud AI API
+  return await executeDirectAI(BUILTIN_AI_URL, BUILTIN_AI_KEY, BUILTIN_AI_MODEL, messages);
+}
+
+async function executeDirectAI(url, apiKey, model, messages) {
+  const cleanApiKey = apiKey.trim().replace(/^Bearer\s+/i, '');
+  const directRes = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-Client-Id': browserId,
-      'X-Browser-Id': browserId
+      'Authorization': `Bearer ${cleanApiKey}`
     },
     body: JSON.stringify({
+      model: model,
       messages,
-      stream: false,
       temperature: 0.1,
-      clientId: browserId
+      stream: false
     })
-  }, proxyUrl);
+  });
 
-  const resText = await proxyRes.text();
-  let resJson = {};
-  try { resJson = JSON.parse(resText); } catch {}
-
-  if (!proxyRes.ok) {
-    if (proxyRes.status === 429) {
-      throw new Error(resJson.error || '今日 AI 接口免费额度已达上限 (300次/日)。请在插件设置中配置自定义 API Key。');
-    }
-    throw new Error(resJson.error || `AI 服务调用失败 (${proxyRes.status})`);
+  if (!directRes.ok) {
+    const errText = await directRes.text();
+    throw new Error(`AI 服务响应异常 (${directRes.status}): ${errText.slice(0, 100)}`);
   }
 
-  return resJson?.choices?.[0]?.message?.content || '';
+  const directData = await directRes.json();
+  const content = directData?.choices?.[0]?.message?.content;
+  if (!content) {
+    throw new Error('AI 返回内容为空');
+  }
+  return content;
 }
