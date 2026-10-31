@@ -7,11 +7,11 @@ const DEFAULT_SETTINGS = {
   aiApiKey: '',
   aiBaseUrl: 'https://token.sensenova.cn/v1/chat/completions',
   aiModel: 'sensenova-6.8-flash-lite',
-  proxyUrl: 'https://truthguard-yuanbao.pages.dev',
+  proxyUrl: 'https://truthguard.freshmanj.com',
   searchCount: 10
 };
 
-const DEFAULT_PROD_URL = 'https://truthguard-yuanbao.pages.dev';
+const DEFAULT_PROD_URL = 'https://truthguard.freshmanj.com';
 
 // Persistent client/browser ID for IP + browser fingerprint rate-limiting
 async function getBrowserId() {
@@ -69,6 +69,12 @@ chrome.runtime.onInstalled.addListener(() => {
   chrome.storage.local.get(['truthguard_settings'], (result) => {
     if (!result.truthguard_settings) {
       chrome.storage.local.set({ truthguard_settings: DEFAULT_SETTINGS });
+    } else {
+      const s = result.truthguard_settings;
+      if (!s.proxyUrl || s.proxyUrl === 'https://truthguard-yuanbao.pages.dev') {
+        s.proxyUrl = DEFAULT_SETTINGS.proxyUrl;
+        chrome.storage.local.set({ truthguard_settings: s });
+      }
     }
   });
 

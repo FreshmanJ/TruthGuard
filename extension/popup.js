@@ -167,7 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
     aiApiKey: '',
     aiBaseUrl: 'https://token.sensenova.cn/v1/chat/completions',
     aiModel: 'sensenova-6.8-flash-lite',
-    proxyUrl: 'https://truthguard-yuanbao.pages.dev',
+    proxyUrl: 'https://truthguard.freshmanj.com',
     searchCount: 10,
     lang: 'auto',
     enableSelectionPill: true
@@ -313,6 +313,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // 2. Load Settings from Storage
   chrome.storage.local.get(['truthguard_settings'], (result) => {
     const s = result.truthguard_settings || {};
+    if (s.proxyUrl === 'https://truthguard-yuanbao.pages.dev') {
+      s.proxyUrl = 'https://truthguard.freshmanj.com';
+      chrome.storage.local.set({ truthguard_settings: { ...s } });
+    }
     currentSettings = { ...currentSettings, ...s };
     if (typeof currentSettings.enableSelectionPill !== 'boolean') {
       currentSettings.enableSelectionPill = true;
@@ -329,7 +333,7 @@ document.addEventListener('DOMContentLoaded', () => {
     inputAiKey.value = currentSettings.aiApiKey || '';
     inputAiUrl.value = currentSettings.aiBaseUrl || 'https://token.sensenova.cn/v1/chat/completions';
     inputAiModel.value = currentSettings.aiModel || 'sensenova-6.8-flash-lite';
-    inputProxyUrl.value = currentSettings.proxyUrl || 'https://truthguard-yuanbao.pages.dev';
+    inputProxyUrl.value = currentSettings.proxyUrl || 'https://truthguard.freshmanj.com';
 
     applyTranslations(resolveLang(currentSettings.lang));
 
@@ -490,7 +494,7 @@ document.addEventListener('DOMContentLoaded', () => {
       aiApiKey: inputAiKey.value.trim(),
       aiBaseUrl: inputAiUrl.value.trim() || 'https://token.sensenova.cn/v1/chat/completions',
       aiModel: inputAiModel.value.trim() || 'sensenova-6.8-flash-lite',
-      proxyUrl: inputProxyUrl.value.trim() || 'https://truthguard-yuanbao.pages.dev',
+      proxyUrl: inputProxyUrl.value.trim() || 'https://truthguard.freshmanj.com',
       searchCount: 10,
       lang: selectLangEl.value || 'auto',
       enableSelectionPill: toggleSelectionPillEl ? toggleSelectionPillEl.checked : true

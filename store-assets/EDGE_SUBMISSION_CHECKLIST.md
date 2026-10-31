@@ -44,7 +44,7 @@
 2. **次要类别 (Secondary category)**：选择 `Search tools (搜索工具)` 或 `Developer tools`。
 3. **支持 URL (Support URL)**：填写您的 GitHub Issues 页面或项目官网（例如 `https://github.com/FreshmanJ/TruthGuard/issues`）。
 4. **隐私政策 URL (Privacy policy URL - 必填)**：
-   * 填写部署后的隐私页面链接（例如 `https://truthguard.pages.dev/privacy.html`）；
+   * 填写部署后的隐私页面链接（例如 `https://truthguard.freshmanj.com/privacy.html`）；
    * 或者将 `store-assets/PRIVACY_POLICY.md` 粘贴到 GitHub 仓库/Gist，填写该链接。
 5. **网站 (Website URL)**：填写项目主页或 GitHub 仓库地址。
 

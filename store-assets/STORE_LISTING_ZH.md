@@ -83,11 +83,11 @@ TruthGuard 事实检察官 —— 基于腾讯云元宝搜索 (WSA) 的学术与
 ## 4. 关键链接填写 (URLs)
 
 * **官方网站 (Website URL)**:
-  `https://truthguard.pages.dev` *(或您的 GitHub 仓库主页)*
+  `https://truthguard.freshmanj.com` *(或您的 GitHub 仓库主页)*
 * **支持与反馈页面 (Support URL)**:
   `https://github.com/FreshmanJ/TruthGuard/issues` *(或开发者邮箱)*
 * **隐私政策 URL (Privacy Policy URL - 必填)**:
-  `https://truthguard.pages.dev/privacy.html` *(或将 store-assets/PRIVACY_POLICY.md 上传到 GitHub / Gist 后的链接)*
+  `https://truthguard.freshmanj.com/privacy.html` *(或将 store-assets/PRIVACY_POLICY.md 上传到 GitHub / Gist 后的链接)*
 
 ---
 
