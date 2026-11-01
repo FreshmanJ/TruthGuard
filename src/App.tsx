@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Sparkles, Zap, Globe, CheckCircle2, 
-  FileText, Cpu, Scale, Puzzle, Github 
+  FileText, Cpu, Scale, Puzzle, Github, ExternalLink 
 } from 'lucide-react';
 import { Header } from './components/Header';
 import { Editor } from './components/Editor';
@@ -13,7 +13,7 @@ import { CertificateModal } from './components/CertificateModal';
 import { BenchmarkPanel } from './components/BenchmarkPanel';
 import { ExtensionModal } from './components/ExtensionModal';
 import { 
-  Claim, DEFAULT_SETTINGS, UserSettings, VerificationSummary, WorkflowState,
+  Claim, DEFAULT_SETTINGS, EDGE_STORE_URL, UserSettings, VerificationSummary, WorkflowState,
   SourceInputType, ExtractedMediaItem, SourceInspectionTask, MultimodalExtractionTask
 } from './types';
 import { SAMPLE_PRESETS_ZH, SAMPLE_PRESETS_EN, getSamplePresets } from './data/samples';
@@ -421,12 +421,26 @@ export const App: React.FC = () => {
               <span>{t.hero.topPill}</span>
             </div>
 
+            {/* Direct 1-Click to Microsoft Store */}
+            <a
+              href={EDGE_STORE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50/90 hover:bg-emerald-100 px-3.5 py-1 text-xs font-bold text-emerald-800 shadow-2xs transition active:scale-[0.98] cursor-pointer"
+              title={t.header.extensionTitle}
+            >
+              <Puzzle className="h-3.5 w-3.5 text-emerald-600 group-hover:rotate-12 transition-transform duration-200" />
+              <span>{t.hero.extPill}</span>
+              <ExternalLink className="h-3 w-3 text-emerald-600 ml-0.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+            </a>
+
+            {/* Guide & Offline Zip Modal trigger */}
             <button
               onClick={() => setIsExtensionOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50/90 hover:bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800 shadow-2xs transition active:scale-[0.98] cursor-pointer"
+              className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white/85 hover:bg-white px-2.5 py-1 text-xs font-medium text-slate-600 shadow-2xs transition active:scale-[0.98] cursor-pointer"
+              title={t.extension.guideBtnTooltip}
             >
-              <Puzzle className="h-3.5 w-3.5 text-emerald-600" />
-              <span>{t.hero.extPill}</span>
+              <span>{t.extension.guideBtn}</span>
             </button>
           </div>
 

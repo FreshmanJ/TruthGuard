@@ -30,7 +30,8 @@
   * 🟢 **权威证实**：权威信源明确支持，一键生成规范学术角标；
   * 🟡 **存疑/时效差异**：提示版本滞后或报道差异，给出最新官方事实；
   * 🔴 **事实错误/幻觉**：智能标红预警，一键纠错替换；
-* 🧩 **全新上线！浏览器事实核验插件（Chrome / Edge Extension）**：
+* 🧩 **官方认证！浏览器事实核验插件已上架微软 Edge 应用商店**：
+  * 🚀 **[点击前往微软官方商店一键安装](https://microsoftedge.microsoft.com/addons/detail/kgphjkcbegamhlmpabjcadllhocjnlan)**（已通过微软官方安全审计，免开启开发者模式，一秒获取）；
   * 划选网页文本即刻触发穿透核验；
   * 右下角轻量悬浮工作态胶囊；
   * 点击小箭头即可平滑展开与网页版完全一致的**全屏交互式工作过程拓扑树**；
@@ -96,7 +97,7 @@ npm run dev
 npm run package:ext
 ```
 
-浏览器打开 `http://localhost:3000` 即可开始体验！页面右上角及首页宣传横幅均提供「**浏览器插件**」直接下载与极简安装指南。
+浏览器打开 `http://localhost:3000` 即可开始体验！页面顶栏及首页宣传横幅均支持直接点击跳转至**[微软官方扩展商店一键安装](https://microsoftedge.microsoft.com/addons/detail/kgphjkcbegamhlmpabjcadllhocjnlan)**（亦提供离线安装包作为备用）。
 
 ---
 

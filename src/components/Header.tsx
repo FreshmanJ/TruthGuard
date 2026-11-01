@@ -1,14 +1,15 @@
 import React from 'react';
 import { 
-  ShieldCheck, Settings, Play, Pause, Square, Puzzle, Github, Languages 
+  ShieldCheck, Settings, Play, Pause, Square, Puzzle, Github, Languages, ExternalLink 
 } from 'lucide-react';
 import { useI18n } from '../i18n/context';
+import { EDGE_STORE_URL } from '../types';
 
 interface HeaderProps {
   onOpenSettings: () => void;
   onOpenCertificate: () => void;
   onOpenBenchmark: () => void;
-  onOpenExtension: () => void;
+  onOpenExtension?: () => void;
   onLogoClick?: () => void;
   hasResults: boolean;
   claimsCount: number;
@@ -146,18 +147,21 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="font-medium">{lang === 'zh' ? 'EN' : '中文'}</span>
           </button>
 
-          {/* Browser Extension Button */}
-          <button
-            onClick={onOpenExtension}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300/90 bg-gradient-to-r from-emerald-50 via-teal-50/70 to-emerald-50 px-2.5 py-1.5 text-xs font-bold text-emerald-900 shadow-2xs transition hover:from-emerald-100 hover:to-teal-100 active:scale-[0.98] cursor-pointer"
+          {/* Browser Extension Button - Directly Jumps to Microsoft Edge Add-ons */}
+          <a
+            href={EDGE_STORE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group inline-flex items-center gap-1.5 rounded-lg border border-emerald-300/90 bg-gradient-to-r from-emerald-50 via-teal-50/70 to-emerald-50 px-2.5 py-1.5 text-xs font-bold text-emerald-900 shadow-2xs transition hover:from-emerald-100 hover:to-teal-100 hover:border-emerald-400 active:scale-[0.98] cursor-pointer"
             title={t.header.extensionTitle}
           >
-            <Puzzle className="h-3.5 w-3.5 text-emerald-600" />
+            <Puzzle className="h-3.5 w-3.5 text-emerald-600 group-hover:rotate-12 transition-transform duration-200" />
             <span>{t.header.extensionBtn}</span>
             <span className="hidden sm:inline-flex items-center rounded-full bg-emerald-200/80 px-1.5 py-0.2 text-[9.5px] font-mono text-emerald-950 font-extrabold">
-              v1.0
+              {t.header.extensionBadge}
             </span>
-          </button>
+            <ExternalLink className="h-3 w-3 text-emerald-700/80 ml-0.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+          </a>
 
           {/* GitHub Open Source Link */}
           <a

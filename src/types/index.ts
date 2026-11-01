@@ -71,6 +71,8 @@ export const DEFAULT_SETTINGS: UserSettings = {
   reasoningEffort: 'low',
 };
 
+export const EDGE_STORE_URL = 'https://microsoftedge.microsoft.com/addons/detail/kgphjkcbegamhlmpabjcadllhocjnlan';
+
 /* ================= Real-time Agent Workflow Types ================= */
 
 export type SourceInputType = 'text' | 'document' | 'url';

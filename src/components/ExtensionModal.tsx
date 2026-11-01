@@ -4,6 +4,7 @@ import {
   ExternalLink, Sparkles, ShieldCheck, FileText, Monitor, Check, Github
 } from 'lucide-react';
 import { useI18n, interpolate } from '../i18n/context';
+import { EDGE_STORE_URL } from '../types';
 
 interface ExtensionModalProps {
   isOpen: boolean;
@@ -83,25 +84,19 @@ export const ExtensionModal: React.FC<ExtensionModalProps> = ({ isOpen, onClose 
               </p>
             </div>
 
-            {/* Download CTA Button */}
+            {/* Direct Microsoft Store CTA Button */}
             <div className="flex flex-col items-center gap-2 flex-shrink-0">
-              <button
-                onClick={handleDownload}
-                className="inline-flex items-center gap-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white px-5 py-3 text-xs font-bold shadow-elevated transition hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+              <a
+                href={EDGE_STORE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 text-xs font-bold shadow-elevated transition hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
               >
-                {downloaded ? (
-                  <>
-                    <Check className="h-4 w-4 text-emerald-400" />
-                    <span>{t.extension.downloadedNotice}</span>
-                  </>
-                ) : (
-                  <>
-                    <Download className="h-4 w-4 text-yuanbao-400" />
-                    <span>{t.extension.downloadBtn}</span>
-                  </>
-                )}
-              </button>
-              <span className="text-[10px] font-mono text-slate-400">
+                <Puzzle className="h-4 w-4 text-white" />
+                <span>{t.extension.downloadBtn}</span>
+                <ExternalLink className="h-3.5 w-3.5 text-white/90" />
+              </a>
+              <span className="text-[10.5px] font-mono text-emerald-800 bg-emerald-100/70 border border-emerald-200/80 px-2.5 py-0.5 rounded-full">
                 {t.extension.downloadZipNotice}
               </span>
             </div>
@@ -240,18 +235,28 @@ export const ExtensionModal: React.FC<ExtensionModalProps> = ({ isOpen, onClose 
               href="https://github.com/FreshmanJ/TruthGuard"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 px-3.5 py-2 text-xs font-semibold transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 px-3 py-2 text-xs font-semibold transition cursor-pointer"
             >
               <Github className="h-3.5 w-3.5 text-slate-800" />
-              <span>{t.extension.githubSource}</span>
+              <span className="hidden sm:inline">{t.extension.githubSource}</span>
             </a>
             <button
               onClick={handleDownload}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 text-xs font-bold transition shadow-xs cursor-pointer active:scale-[0.98]"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 px-3 py-2 text-xs font-medium transition cursor-pointer"
+              title="下载离线 zip 包，适合开发者或内网环境测试"
             >
-              <Download className="h-3.5 w-3.5" />
+              <Download className="h-3.5 w-3.5 text-slate-500" />
               <span>{t.extension.downloadZipBtn}</span>
             </button>
+            <a
+              href={EDGE_STORE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-xs font-bold transition shadow-xs cursor-pointer active:scale-[0.98]"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              <span>{t.extension.storeInstallBtn}</span>
+            </a>
             <button
               onClick={onClose}
               className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 px-3.5 py-2 text-xs font-medium transition cursor-pointer"
