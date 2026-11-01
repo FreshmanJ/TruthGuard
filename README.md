@@ -1,4 +1,7 @@
 # TruthGuard 事实检察官 🛡️
+
+[English](./README_EN.md) | [简体中文](./README.md)
+
 > **基于腾讯云元宝搜索 (WSA) 的学术与技术事实审校官 & 文献溯源副驾驶**
 > 
 > *项目定位：基于腾讯云元宝搜索 (WSA) 打造的专业级事实核验与文献溯源方案*  
@@ -6,6 +9,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Tencent Cloud WSA](https://img.shields.io/badge/Tencent_Cloud-Yuanbao_Search_API-00c878.svg)](https://cloud.tencent.com/product/wsa)
+[![Microsoft Edge Add-ons](https://img.shields.io/badge/Microsoft_Edge-Add--ons_Live-0078d4.svg)](https://microsoftedge.microsoft.com/addons/detail/kgphjkcbegamhlmpabjcadllhocjnlan)
 [![React 19](https://img.shields.io/badge/React-19.0-61dafb.svg)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue.svg)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-3.4-38bdf8.svg)](https://tailwindcss.com/)
@@ -15,7 +19,7 @@
 
 ## 🌟 项目简介 (Overview)
 
-大模型时代，无论是学术论文写作、技术博客创作还是日常研报撰写，“**幻觉（Hallucination）**”始终是横亘在开发者面前的致命障碍——AI 经常信誓旦旦地给出错误的数据、过时的 API 版本号、或者生造不存在的文献引用。
+大模型时代，无论是学术论文写作、技术博客创作还是日常研报撰写，“**幻觉（Hallucination）**”始终是横亘在创作者与开发者面前的致命障碍——AI 经常信誓旦旦地给出错误的数据、过时的 API 版本号、或者生造不存在的文献引用。
 
 传统的搜索引擎抓取方案面临两大痛点：
 1. **数据噪声极大**：单个网页往往充斥数万 Token 的 HTML、广告与脚手架代码，导致大模型 Token 成本飙升；
@@ -36,8 +40,8 @@
   * 右下角轻量悬浮工作态胶囊；
   * 点击小箭头即可平滑展开与网页版完全一致的**全屏交互式工作过程拓扑树**；
   * 核验完成后浮窗变为「查看报告」按钮，可一键展开完整审计报告并**直接下载为 PDF 格式**！
-* 🌐 **中英双语国际化 (i18n Ready)**：顶栏一键无缝切换中英文界面，深度本地化内置预设样例（学术论文、科技快讯、政策规范）、交互日志、全屏工作拓扑树与背书审计报告；
-* 📜 **背书证书与 Markdown 报告**：一键生成事实审计健康度证书（带元宝搜索防伪认证印鉴）。
+* 🌐 **中英双语国际化 (i18n Ready)**：顶栏一键无缝切换中英文界面，深度本地化内置预设样例（学术论文、科技快讯、政策规范）、交互日志、全屏工作拓扑树与审校报告；
+* 📜 **结构化审计报告导出**：一键导出包含命题判定、信源依据与原文替换建议的完整 Markdown / PDF 事实审校与文献溯源报告。
 
 ---
 
@@ -45,7 +49,7 @@
 
 ```mermaid
 graph TD
-    User["用户输入文本 (学术草稿/技术博客)"] --> Extractor["命题提取引擎 (Claim Extraction)"]
+    User["用户输入文本 / 划选网页文本"] --> Extractor["命题提取引擎 (Claim Extraction)"]
     Extractor -->|拆解为结构化命题与关键词| Dispatcher["搜索调度器 (Search Dispatcher)"]
     
     subgraph Engine ["腾讯云元宝搜索与事实核验核心"]
@@ -61,9 +65,9 @@ graph TD
     Verdict -->|🟡 存疑差异| DisputedCard["提示时效差异与最新数据"]
     Verdict -->|🔴 事实错误| RefutedCard["一键替换修正幻觉"]
     
-    VerifiedCard --> Certificate["事实健康度审计证书 / 导出 Markdown 报告"]
-    DisputedCard --> Certificate
-    RefutedCard --> Certificate
+    VerifiedCard --> ExportReport["导出结构化 Markdown / PDF 审计报告"]
+    DisputedCard --> ExportReport
+    RefutedCard --> ExportReport
 ```
 
 ---
@@ -76,7 +80,7 @@ graph TD
 3. **神级微交互**：
    - 「一键注入权威引用」：在正文中自动打上 `[^1]`、`[^2]` 角标，并在文末生成学术标准文献清单；
    - 「一键修正全部幻觉」：直接替换文中被证伪的错误表述；
-   - 「事实审计背书证书」：生成带防伪印章与 SHA-256 审计指纹的认证证书。
+   - 「一键导出审计报告」：一键导出包含详细命题仲裁、信源证据与修正对比的完整 Markdown 报告。
 
 ---
 
@@ -84,8 +88,8 @@ graph TD
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/your-username/truthguard-yuanbao.git
-cd truthguard-yuanbao
+git clone https://github.com/FreshmanJ/TruthGuard.git
+cd TruthGuard
 
 # 2. 安装依赖
 npm install
